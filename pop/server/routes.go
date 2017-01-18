@@ -12,7 +12,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/docker/docker/api/types"
@@ -30,14 +29,6 @@ const (
 	TokenBytes = 32
 
 	loginMethod = "/pop.PoP/Login"
-)
-
-var (
-	AuthErr         = grpc.Errorf(codes.PermissionDenied, "access denied")
-	InternalErr     = grpc.Errorf(codes.Internal, "server fault")
-	InvalidArgErr   = grpc.Errorf(codes.InvalidArgument, "invalid arguments")
-	InvalidTokenErr = grpc.Errorf(codes.PermissionDenied, "invalid token")
-	NotLoggedErr    = grpc.Errorf(codes.Unauthenticated, "not authenticated")
 )
 
 type service struct {
@@ -130,21 +121,21 @@ func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageL
 // Remember that tokens are transient and not stored, so a new login is needed in case the service dies.
 func (svc *service) Login(ctx context.Context, creds *pop.Credentials) (*pop.Token, error) {
 	if creds == nil {
-		return nil, InvalidArgErr
+		return nil, pop.InvalidArgErr
 	}
 
 	if user, found := svc.users[creds.Username]; found {
 		if bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(creds.Password)) == nil {
 			tok, err := svc.NewToken()
 			if err != nil {
-				return nil, InternalErr
+				return nil, pop.InternalErr
 			}
 
 			return &pop.Token{Value: tok}, nil
 		}
 	}
 
-	return nil, AuthErr
+	return nil, pop.AuthErr
 }
 
 func (svc *service) Logout(ctx context.Context, in *empty.Empty) (*empty.Empty, error) {
@@ -174,11 +165,11 @@ func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.Netw
 func (svc *service) authorize(ctx context.Context) error {
 	token := getToken(ctx)
 	if token == "" {
-		return NotLoggedErr
+		return pop.NotLoggedErr
 	}
 
 	if !svc.CheckToken(token) {
-		return InvalidTokenErr
+		return pop.InvalidTokenErr
 	}
 
 	return nil
@@ -268,7 +259,7 @@ func (svc *service) getSingleContainerInfo(id string) (*pop.Container, error) {
 	// why is Docker API such a mess?
 	created, err := time.Parse(time.RFC3339Nano, dcont.Created)
 	if err != nil {
-		return nil, InternalErr
+		return nil, pop.InternalErr
 	}
 
 	b := bytes.Buffer{}
@@ -298,7 +289,7 @@ func (svc *service) getSingleImageInfo(id string) (*pop.Image, error) {
 	// why is Docker API such a mess?
 	created, err := time.Parse(time.RFC3339Nano, dimg.Created)
 	if err != nil {
-		return nil, InternalErr
+		return nil, pop.InternalErr
 	}
 
 	return &pop.Image{

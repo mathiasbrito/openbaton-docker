@@ -1,0 +1,14 @@
+package pop
+
+import (
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+)
+
+var (
+	AuthErr         = grpc.Errorf(codes.PermissionDenied, "access denied")
+	InternalErr     = grpc.Errorf(codes.Internal, "server fault")
+	InvalidArgErr   = grpc.Errorf(codes.InvalidArgument, "invalid arguments")
+	InvalidTokenErr = grpc.Errorf(codes.PermissionDenied, "invalid token")
+	NotLoggedErr    = grpc.Errorf(codes.Unauthenticated, "not authenticated")
+)
