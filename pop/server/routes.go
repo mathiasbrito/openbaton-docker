@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -18,10 +20,10 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mcilloni/openbaton-docker/docker-pop/proto-pop"
+	"github.com/mcilloni/openbaton-docker/pop"
 )
 
-//go:generate protoc -I ../proto-pop ../proto-pop/pop.proto --go_out=plugins=grpc:../proto-pop
+//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:..
 
 const (
 	// TokenBytes specifies how long a token is.
@@ -51,6 +53,7 @@ func newService(cfg Config) (*service, error) {
 	}
 
 	return &service{
+		cln: cln,
 		sessionManager: sessionManager{
 			tk: make(map[string]struct{}),
 		},
@@ -92,7 +95,7 @@ func (sm *sessionManager) NewToken() (string, error) {
 }
 
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
-	// filter for a container with the given id
+	// filter for a container with the given ID
 	if filter.Id != "" {
 		cont, err := svc.getSingleContainerInfo(filter.Id)
 		if err != nil {
@@ -105,6 +108,22 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 	}
 
 	return svc.getContainerInfos()
+}
+
+func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageList, error) {
+	// filter for an image with the given ID
+	if filter.Id != "" {
+		img, err := svc.getSingleImageInfo(filter.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		return &pop.ImageList{
+			List: []*pop.Image{img},
+		}, nil
+	}
+
+	return svc.getImageInfos()
 }
 
 // Login logs into the Pop. It should always be the first function called (to setup a token).
@@ -136,6 +155,22 @@ func (svc *service) Logout(ctx context.Context, in *empty.Empty) (*empty.Empty, 
 	return &empty.Empty{}, nil
 }
 
+func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.NetworkList, error) {
+	// filter for a network with the given ID
+	if filter.Id != "" {
+		netw, err := svc.getSingleNetworkInfo(filter.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		return &pop.NetworkList{
+			List: []*pop.Network{netw},
+		}, nil
+	}
+
+	return svc.getNetworkInfos()
+}
+
 func (svc *service) authorize(ctx context.Context) error {
 	token := getToken(ctx)
 	if token == "" {
@@ -165,7 +200,7 @@ func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
 	conts := make([]*pop.Container, len(dockerConts))
 
 	for i, dcont := range dockerConts {
-		dockerConts[i] = &pop.Container{
+		conts[i] = &pop.Container{
 			Id:             dcont.ID,
 			Names:          dcont.Names,
 			Status:         dcont.State,
@@ -173,7 +208,7 @@ func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
 			ImageId:        dcont.ImageID,
 			Created:        dcont.Created,
 			Command:        dcont.Command,
-			Endpoints:      extractEndpoint(dcont.NetworkSettings.Networks),
+			Endpoints:      extractEndpoints(dcont.NetworkSettings.Networks),
 		}
 	}
 
@@ -190,6 +225,38 @@ func (svc *service) getDockerContainersForStatus(status string) ([]types.Contain
 		All:     true,
 		Filters: filts,
 	})
+}
+
+func (svc *service) getImageInfos() (*pop.ImageList, error) {
+	dockerImgs, err := svc.cln.ImageList(context.Background(), types.ImageListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	imgs := make([]*pop.Image, len(dockerImgs))
+	for i, dimg := range dockerImgs {
+		imgs[i] = &pop.Image{
+			Id:      dimg.ID,
+			Names:   dimg.RepoTags,
+			Created: dimg.Created,
+		}
+	}
+
+	return &pop.ImageList{List: imgs}, nil
+}
+
+func (svc *service) getNetworkInfos() (*pop.NetworkList, error) {
+	dockerNets, err := svc.cln.NetworkList(context.Background(), types.NetworkListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	nets := make([]*pop.Network, len(dockerNets))
+	for i, dnet := range dockerNets {
+		nets[i] = extractNetwork(dnet)
+	}
+
+	return &pop.NetworkList{List: nets}, nil
 }
 
 func (svc *service) getSingleContainerInfo(id string) (*pop.Container, error) {
@@ -218,8 +285,36 @@ func (svc *service) getSingleContainerInfo(id string) (*pop.Container, error) {
 		ImageId:        dcont.Image,
 		Created:        created.Unix(),
 		Command:        b.String(),
-		Endpoints:      extractEndpoint(dcont.NetworkSettings.Networks),
+		Endpoints:      extractEndpoints(dcont.NetworkSettings.Networks),
 	}, nil
+}
+
+func (svc *service) getSingleImageInfo(id string) (*pop.Image, error) {
+	dimg, _, err := svc.cln.ImageInspectWithRaw(context.Background(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	// why is Docker API such a mess?
+	created, err := time.Parse(time.RFC3339Nano, dimg.Created)
+	if err != nil {
+		return nil, InternalErr
+	}
+
+	return &pop.Image{
+		Id:      dimg.ID,
+		Names:   dimg.RepoTags,
+		Created: created.Unix(),
+	}, nil
+}
+
+func (svc *service) getSingleNetworkInfo(id string) (*pop.Network, error) {
+	dnet, err := svc.cln.NetworkInspect(context.Background(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return extractNetwork(dnet), nil
 }
 
 func (svc *service) streamInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
@@ -241,29 +336,94 @@ func (svc *service) unaryInterceptor(ctx context.Context, req interface{}, info 
 	return handler(ctx, req)
 }
 
-func extractEndpoint(netMap map[string]*network.EndpointSettings) map[string]*pop.Endpoint {
-	endpoints := make(map[string]*pop.Endpoint)
+func extractEndpoint(endpointSettings *network.EndpointSettings) *pop.Endpoint {
+	var ipv4, ipv6 *pop.Ip
 
-	for netname, endpointSettings := range netMap {
-		endpoints[netname] = &pop.Endpoint{
-			NetId:      endpointSettings.NetworkID,
-			EndpointId: endpointSettings.EndpointID,
+	// IPAMConfig may contain pre-allocated IP addresses for a created, but not yet started, container.
+	if endpointSettings.IPAddress != "" {
+		if endpointSettings.IPAMConfig != nil {
+			ipv4 = &pop.Ip{
+				Address: endpointSettings.IPAMConfig.IPv4Address,
+			}
+		}
+	} else {
+		fullAddr := fmt.Sprintf("%s/%d", endpointSettings.IPAddress, endpointSettings.IPPrefixLen)
+		_, ipnet, err := net.ParseCIDR(fullAddr)
+		if err != nil {
+			panic("should not happen")
+		}
 
-			Ipv4: &pop.IpConfig{
-				Address: endpointSettings.IPAddress,
+		ipv4 = &pop.Ip{
+			Address: endpointSettings.IPAddress,
+			Subnet: &pop.Subnet{
+				Cidr:    ipnet.String(),
 				Gateway: endpointSettings.Gateway,
-				Prefix:  int64(endpointSettings.IPPrefixLen),
-			},
-
-			Ipv6: &pop.IpConfig{
-				Address: endpointSettings.GlobalIPv6Address,
-				Gateway: endpointSettings.IPv6Gateway,
-				Prefix:  int64(endpointSettings.GlobalIPv6PrefixLen),
 			},
 		}
 	}
 
+	if endpointSettings.GlobalIPv6Address != "" {
+		if endpointSettings.IPAMConfig != nil {
+			ipv6 = &pop.Ip{
+				Address: endpointSettings.IPAMConfig.IPv6Address,
+			}
+		}
+	} else {
+		fullAddr := fmt.Sprintf("%s/%d", endpointSettings.GlobalIPv6Address, endpointSettings.GlobalIPv6PrefixLen)
+		_, ipnet, err := net.ParseCIDR(fullAddr)
+		if err != nil {
+			panic("should not happen")
+		}
+
+		ipv6 = &pop.Ip{
+			Address: endpointSettings.GlobalIPv6Address,
+			Subnet: &pop.Subnet{
+				Cidr:    ipnet.String(),
+				Gateway: endpointSettings.IPv6Gateway,
+			},
+		}
+	}
+
+	return &pop.Endpoint{
+		NetId:      endpointSettings.NetworkID,
+		EndpointId: endpointSettings.EndpointID,
+		Ipv4:       ipv4,
+		Ipv6:       ipv6,
+	}
+}
+
+func extractEndpoints(dNetMap map[string]*network.EndpointSettings) map[string]*pop.Endpoint {
+	endpoints := make(map[string]*pop.Endpoint)
+
+	for netname, endpointSettings := range dNetMap {
+		endpoints[netname] = extractEndpoint(endpointSettings)
+	}
+
 	return endpoints
+}
+
+func extractNetwork(dnet types.NetworkResource) *pop.Network {
+	subs := extractSubnets(dnet.IPAM.Config)
+
+	return &pop.Network{
+		Id:       dnet.ID,
+		Name:     dnet.Name,
+		External: !dnet.Internal,
+		Subnets:  subs,
+	}
+}
+
+func extractSubnets(dSubnets []network.IPAMConfig) []*pop.Subnet {
+	subs := make([]*pop.Subnet, len(dSubnets))
+
+	for i, dSubnet := range dSubnets {
+		subs[i] = &pop.Subnet{
+			Cidr:    dSubnet.Subnet,
+			Gateway: dSubnet.Gateway,
+		}
+	}
+
+	return subs
 }
 
 func getToken(ctx context.Context) string {

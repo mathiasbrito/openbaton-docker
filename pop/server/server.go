@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/mcilloni/openbaton-docker/docker-pop/proto-pop"
+	"github.com/mcilloni/openbaton-docker/pop"
 	log "github.com/sirupsen/logrus"
 )
 
