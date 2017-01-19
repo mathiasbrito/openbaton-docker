@@ -9,9 +9,11 @@ import (
 
 // Config for the PoP service.
 type Config struct {
-	Proto, Netaddr string
-	Users          Users
-	DockerdHost    string
+	PopName     string
+	Proto       string
+	Netaddr     string
+	Users       Users
+	DockerdHost string
 	// Add TLS here
 }
 

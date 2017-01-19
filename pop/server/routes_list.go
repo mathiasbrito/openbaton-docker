@@ -2,88 +2,17 @@ package server
 
 import (
 	"bytes"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mcilloni/openbaton-docker/pop"
 )
-
-//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:..
-
-const (
-	// TokenBytes specifies how long a token is.
-	TokenBytes = 32
-
-	loginMethod = "/pop.PoP/Login"
-)
-
-type service struct {
-	sessionManager
-	users Users
-	cln   *client.Client
-}
-
-func newService(cfg Config) (*service, error) {
-	cln, err := dialDocker(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &service{
-		cln: cln,
-		sessionManager: sessionManager{
-			tk: make(map[string]struct{}),
-		},
-		users: cfg.Users,
-	}, nil
-}
-
-type sessionManager struct {
-	l  sync.RWMutex
-	tk map[string]struct{}
-}
-
-func (sm *sessionManager) CheckToken(tok string) bool {
-	sm.l.RLock()
-	defer sm.l.RUnlock()
-
-	_, ok := sm.tk[tok]
-	return ok
-}
-
-func (sm *sessionManager) DeleteToken(tok string) {
-	delete(sm.tk, tok)
-}
-
-func (sm *sessionManager) NewToken() (string, error) {
-	b := make([]byte, TokenBytes)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-
-	token := base64.StdEncoding.EncodeToString(b)
-
-	sm.l.Lock()
-	defer sm.l.Unlock()
-
-	sm.tk[token] = struct{}{}
-
-	return token, nil
-}
 
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
 	// filter for a container with the given ID
@@ -117,35 +46,6 @@ func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageL
 	return svc.getImageInfos()
 }
 
-// Login logs into the Pop. It should always be the first function called (to setup a token).
-// Remember that tokens are transient and not stored, so a new login is needed in case the service dies.
-func (svc *service) Login(ctx context.Context, creds *pop.Credentials) (*pop.Token, error) {
-	if creds == nil {
-		return nil, pop.InvalidArgErr
-	}
-
-	if user, found := svc.users[creds.Username]; found {
-		if bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(creds.Password)) == nil {
-			tok, err := svc.NewToken()
-			if err != nil {
-				return nil, pop.InternalErr
-			}
-
-			return &pop.Token{Value: tok}, nil
-		}
-	}
-
-	return nil, pop.AuthErr
-}
-
-func (svc *service) Logout(ctx context.Context, in *empty.Empty) (*empty.Empty, error) {
-	// getToken() will always return a valid token (it has been checked in unaryInterceptor()).
-
-	svc.DeleteToken(getToken(ctx))
-
-	return &empty.Empty{}, nil
-}
-
 func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.NetworkList, error) {
 	// filter for a network with the given ID
 	if filter.Id != "" {
@@ -160,19 +60,6 @@ func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.Netw
 	}
 
 	return svc.getNetworkInfos()
-}
-
-func (svc *service) authorize(ctx context.Context) error {
-	token := getToken(ctx)
-	if token == "" {
-		return pop.NotLoggedErr
-	}
-
-	if !svc.CheckToken(token) {
-		return pop.InvalidTokenErr
-	}
-
-	return nil
 }
 
 func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
@@ -308,25 +195,6 @@ func (svc *service) getSingleNetworkInfo(id string) (*pop.Network, error) {
 	return extractNetwork(dnet), nil
 }
 
-func (svc *service) streamInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	if err := svc.authorize(stream.Context()); err != nil {
-		return err
-	}
-
-	return handler(srv, stream)
-}
-
-func (svc *service) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	// Let the Login method AND ONLY IT pass through without a valid token (for obvious reasons)
-	if info.FullMethod != loginMethod {
-		if err := svc.authorize(ctx); err != nil {
-			return nil, err
-		}
-	}
-
-	return handler(ctx, req)
-}
-
 func extractEndpoint(endpointSettings *network.EndpointSettings) *pop.Endpoint {
 	var ipv4, ipv6 *pop.Ip
 
@@ -415,21 +283,4 @@ func extractSubnets(dSubnets []network.IPAMConfig) []*pop.Subnet {
 	}
 
 	return subs
-}
-
-func getToken(ctx context.Context) string {
-	md, ok := metadata.FromContext(ctx)
-	if !ok {
-		return ""
-	}
-
-	if len(md["token"]) == 0 {
-		return ""
-	}
-
-	return md["token"][0]
-}
-
-func dialDocker(cfg Config) (*client.Client, error) {
-	return client.NewClient(cfg.DockerdHost, client.DefaultVersion, nil, nil)
 }

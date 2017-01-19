@@ -5,13 +5,17 @@ package pop;
 import "empty.proto";
 
 // Service definition.
-service PoP {
+service Pop {
   // Containers returns the containers available in the PoP, either 
   // created or running.
   rpc Containers(Filter) returns (ContainerList);
 
   // Images returns the images available in the PoP.
   rpc Images(Filter) returns (ImageList);
+
+  // Info can be used to check if the Pop is alive and if your credentials to this service are valid.
+  // It also returns informations about this server.
+  rpc Info(google.protobuf.Empty) returns (Infos);
 
   // Networks returns the available retworks in the PoP.
   rpc Networks(Filter) returns (NetworkList);
@@ -66,6 +70,12 @@ message Image {
 
 message ImageList {
   repeated Image list = 1;
+}
+
+message Infos {
+  string type = 1;
+  string name = 2;
+  int64 timestamp = 3;
 }
 
 message Ip {

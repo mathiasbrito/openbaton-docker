@@ -12,25 +12,30 @@ import (
 // Server represents the PoP service.
 type Server struct {
 	Config
+	net.Listener
 }
 
-func New(confFile string) (Server, error) {
+func New(confFile string) (*Server, error) {
 	cfg, err := ReadConfigFile(confFile)
 	if err != nil {
-		return Server{}, err
+		return nil, err
 	}
 
-	return Server{cfg}, nil
+	return &Server{
+		Config: cfg,
+	}, nil
 }
 
 // Serve spawns the service.
-func (s Server) Serve() error {
+func (s *Server) Serve() error {
 	log.WithField("cfg", s.Config).Info("starting docker-popd")
 
 	lis, err := net.Listen(s.Config.Proto, s.Config.Netaddr)
 	if err != nil {
 		return err
 	}
+
+	s.Listener = lis
 
 	svc, err := newService(s.Config)
 	if err != nil {
@@ -42,9 +47,9 @@ func (s Server) Serve() error {
 		grpc.UnaryInterceptor(svc.unaryInterceptor),
 	)
 
-	pop.RegisterPoPServer(srv, svc)
+	pop.RegisterPopServer(srv, svc)
 
-	if err := srv.Serve(lis); err != nil {
+	if err := srv.Serve(s.Listener); err != nil {
 		return err
 	}
 
