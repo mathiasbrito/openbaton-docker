@@ -42,6 +42,8 @@ func (sc *sessionCache) init() {
 	sc.sessions = make(map[Credentials]*session)
 }
 
+// FlushError is an error type containing any error encountered while executing 
+// FlushSessions.
 type FlushError []error
 
 func (errs FlushError) Error() string {
@@ -55,6 +57,8 @@ func (errs FlushError) Error() string {
 }
 
 // FlushSessions closes all the cached sessions, trying to log out from them first.
+// If you wish, you can inspect the single errors from the Logout and Close operation
+// through type casting the returned error into a FlushError.
 func FlushSessions() error {
 	ret := FlushError{}
 

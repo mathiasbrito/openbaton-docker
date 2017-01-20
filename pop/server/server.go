@@ -6,7 +6,6 @@ import (
 	"google.golang.org/grpc"
 
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
-	log "github.com/sirupsen/logrus"
 )
 
 // Server represents the PoP service.
@@ -15,6 +14,7 @@ type Server struct {
 	net.Listener
 }
 
+// New initialises a new Server from a configuration file.
 func New(confFile string) (*Server, error) {
 	cfg, err := ReadConfigFile(confFile)
 	if err != nil {
@@ -28,9 +28,19 @@ func New(confFile string) (*Server, error) {
 
 // Serve spawns the service.
 func (s *Server) Serve() error {
-	log.WithField("cfg", s.Config).Info("starting docker-popd")
+	//log.WithField("cfg", s.Config).Info("starting docker-popd")
 
-	lis, err := net.Listen(s.Config.Proto, s.Config.Netaddr)
+	proto := s.Config.Proto
+	if proto == "" {
+		proto = pop.DefaultListenProtocol
+	}
+	
+	laddr := s.Config.Netaddr
+	if laddr == "" {
+		laddr = pop.DefaultListenAddress
+	}
+
+	lis, err := net.Listen(proto, laddr)
 	if err != nil {
 		return err
 	}

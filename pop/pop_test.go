@@ -3,16 +3,18 @@ package pop
 import (
 	"context"
 	"testing"
+
+	"google.golang.org/grpc"
 	
 	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/server"
 	log "github.com/sirupsen/logrus"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 const (
 	uname = "user_name"
 	pass  = "pass_value"
-	laddr = "localhost:60000"
 )
 
 var (
@@ -26,16 +28,12 @@ var (
 )
 
 func init() {
-	var err error
-
-	user, e := server.NewUser(uname, pass)
-	if e != nil {
-		panic(e)
+	user, err := server.NewUser(uname, pass)
+	if err != nil {
+		panic(err)
 	}
 
 	cfg = server.Config{
-		Proto:   "tcp",
-		Netaddr: laddr,
 		Users:   server.Users{
 			user.Name: user,
 		},
@@ -77,12 +75,20 @@ func TestLoginFail(tst *testing.T) {
 }
 
 func TestLogout(tst *testing.T) {
-	cln, tok, err := login()
+	err := client.FlushSessions()
+	if err != nil {
+		tst.Error(err)	
+	}
 }
 
 func TestUnauthorized(tst *testing.T) {
-	cln := NewPopClient(conn)
-	_, err := cln.Containers(context.Background(), &Filter{})
+	conn, err := grpc.Dial(laddr, grpc.WithInsecure())
+	if err != nil {
+		tst.Error(err)
+	}
+	
+	cln := pop.NewPopClient(conn)
+	_, err = cln.Containers(context.Background(), &pop.Filter{})
 	if err == nil {
 		tst.Error("should have failed")
 	}

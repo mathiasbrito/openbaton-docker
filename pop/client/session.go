@@ -34,9 +34,14 @@ type session struct {
 func newSession(creds Credentials) (*session, error) {
 	sess := new(session)
 
+	target := creds.Host
+	if target == "" {
+		target = pop.DefaultAddress
+	}
+
 	// WithInsecure allows for non-TLS connections.
 	gconn, err := grpc.Dial(
-		creds.Host,
+		target,
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(sess.interceptor),
 	)
