@@ -1,12 +1,22 @@
 package client
 
 import (
-	"github.com/mcilloni/openbaton-docker/pop"
+	"errors"
+	
 	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/golang/protobuf/ptypes/empty"
+)
+
+
+var (
+	// errInvalidSession signals that the session is not valid anymore.
+	errInvalidSession = errors.New("the client is invalid; retry again")
 )
 
 // connection represents a session with the server.
@@ -57,7 +67,7 @@ func (sess *session) ctx(ctx context.Context) context.Context {
 // In case  it is invalid, it marks the current session as invalid.
 func (sess *session) interceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	if sess.invalid {
-		return ErrInvalidClient
+		return errInvalidSession
 	}
 
 	// if we are not logging in, inject the token metadata in the context
@@ -72,10 +82,25 @@ func (sess *session) interceptor(ctx context.Context, method string, req, reply 
 	if grpc.Code(err) == codes.PermissionDenied {
 		sess.invalid = true
 
-		return ErrInvalidClient
+		return errInvalidSession
 	}
 
 	return err
+}
+
+func (sess *session) logout() error {
+	stub := sess.stub()
+
+	_, err := stub.Logout(context.Background(), &empty.Empty{})
+
+	// logging out invalids the session
+	sess.invalid = true
+
+	if err != nil && err != errInvalidSession {
+		return err
+	}
+
+	return nil
 }
 
 func (sess *session) stub() pop.PopClient {

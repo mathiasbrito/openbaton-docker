@@ -1,13 +1,10 @@
 package pop
 
 import (
-	"errors"
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
-
-	"google.golang.org/grpc"
-
+	
+	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/server"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,8 +16,13 @@ const (
 )
 
 var (
-	cfg  server.Config
-	conn *grpc.ClientConn
+	cfg server.Config
+	cln = client.Client{
+		Credentials: client.Credentials{
+			Username: uname,
+			Password: pass,
+		},
+	}
 )
 
 func init() {
@@ -34,7 +36,9 @@ func init() {
 	cfg = server.Config{
 		Proto:   "tcp",
 		Netaddr: laddr,
-		Users:   Users{user.Name: user},
+		Users:   server.Users{
+			user.Name: user,
+		},
 	}
 
 	srv := &server.Server{Config: cfg}
@@ -44,44 +48,27 @@ func init() {
 			log.WithError(err).Fatal("Serve failed")
 		}
 	}()
-
-	conn, err = grpc.Dial(laddr, grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
-}
-
-func login() (PopClient, string, error) {
-	return loginUserPass(uname, pass)
-}
-
-func loginUserPass(uname, pass string) (PopClient, string, error) {
-	cln := NewPopClient(conn)
-	tok, err := cln.Login(context.Background(), &Credentials{
-		Username: uname,
-		Password: pass,
-	})
-
-	if err != nil {
-		return nil, "", err
-	}
-
-	if tok == nil {
-		return nil, "", errors.New("Invalid response")
-	}
-
-	return cln, tok.Value, nil
 }
 
 func TestLogin(tst *testing.T) {
-	_, _, err := login()
+	infos, err := cln.Info(context.Background())
 	if err != nil {
 		tst.Error(err)
 	}
+
+	tst.Log(infos)
 }
 
 func TestLoginFail(tst *testing.T) {
-	_, _, err := loginUserPass("wrong user", "random pass")
+	brokenClient := client.Client{
+		Credentials: client.Credentials{
+			Username: "wrong user", 
+			Password: "random pass",
+		},
+	}
+	
+	_, err := brokenClient.Info(context.Background())
+
 	if err == nil {
 		tst.Error("should have failed")
 	}

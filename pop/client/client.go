@@ -2,24 +2,19 @@ package client
 
 import (
 	"context"
-	"errors"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mcilloni/go-openbaton/catalogue"
-	"github.com/mcilloni/openbaton-docker/pop"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
-//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:..
-
-var (
-	ErrInvalidClient = errors.New("the client is invalid; retry again")
-)
+//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
 
 // Client is a client instance for a Pop, that automatically converts
 // Pop-protocol values into OpenBaton catalogue types.
 // Clients use cached connections, and they are identified by their Credentials.
 type Client struct {
-	Credentials
+	Credentials Credentials
 }
 
 // New returns a Client for given instance, initializing it with
@@ -56,7 +51,7 @@ func (cln *Client) doRetry(op sessionOp) error {
 		}
 
 		// if the error is nil or not from an invalid token, do this again
-		if err := op(stub); err != ErrInvalidClient {
+		if err := op(stub); err != errInvalidSession {
 			return err
 		}
 	}

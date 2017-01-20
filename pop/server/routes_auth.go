@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mcilloni/openbaton-docker/pop"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 type sessionManager struct {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mcilloni/openbaton-docker/pop"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
-//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:..
+//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
 
 const (
 	// TokenBytes specifies how long a token is.

@@ -1,11 +1,15 @@
 package client
 
-import "sync"
+import (
+	"bytes"
+	"fmt"
+	"sync"
+)
 
 var cache sessionCache
 
 func init() {
-	cache.sessions = make(map[Credentials]*session)
+	cache.init()
 }
 
 type sessionCache struct {
@@ -32,4 +36,39 @@ func (sc *sessionCache) get(c Credentials) (*session, error) {
 	sc.sessions[c] = sess
 
 	return sess, nil
+}
+
+func (sc *sessionCache) init() {
+	sc.sessions = make(map[Credentials]*session)
+}
+
+type FlushError []error
+
+func (errs FlushError) Error() string {
+	buf := bytes.NewBufferString("got errors while closing sessions: ")
+
+	for _, err := range errs {
+		buf.WriteString(fmt.Sprintf(`"%v" `, err))
+	}
+
+	return buf.String()
+}
+
+// FlushSessions closes all the cached sessions, trying to log out from them first.
+func FlushSessions() error {
+	ret := FlushError{}
+
+	for _, sess := range cache.sessions {
+		if err := sess.logout(); err != nil {
+			ret = append(ret, err)
+		}
+
+		if err := sess.conn.Close(); err != nil {
+			ret = append(ret, err)
+		}
+	}
+
+	cache.init()
+
+	return ret
 }

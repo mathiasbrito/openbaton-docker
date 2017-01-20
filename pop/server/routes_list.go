@@ -11,7 +11,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
-	"github.com/mcilloni/openbaton-docker/pop"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {

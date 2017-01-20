@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
-	"github.com/mcilloni/openbaton-docker/pop"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 // Image returns the image on the server having the given id as an OpenBaton NFVImage struct.
@@ -30,6 +30,30 @@ func (cln *Client) Image(ctx context.Context, id string) (*catalogue.NFVImage, e
 // Images returns the images on the server as OpenBaton NFVImage structs.
 func (cln *Client) Images(ctx context.Context) ([]*catalogue.NFVImage, error) {
 	return cln.fetchImages(ctx, &pop.Filter{})
+}
+
+// Network returns the network on the server having the given id as an OpenBaton Network struct.
+func (cln *Client) Network(ctx context.Context, id string) (*catalogue.Network, error) {
+	nets, err := cln.fetchNetworks(ctx, &pop.Filter{Id: id})
+	if err != nil {
+		return nil, err
+	}
+
+	switch len(nets) {
+	case 0:
+		return nil, nil
+
+	case 1:
+		return nets[0], nil
+
+	default:
+		return nil, fmt.Errorf("too many networks returned from query")
+	}
+}
+
+// Networks returns the networks on the server as OpenBaton Network structs.
+func (cln *Client) Networks(ctx context.Context) ([]*catalogue.Network, error) {
+	return cln.fetchNetworks(ctx, &pop.Filter{})
 }
 
 // Server returns the container on the server having the given id as an OpenBaton Server struct.
@@ -81,6 +105,31 @@ func (cln *Client) fetchImages(ctx context.Context, filter *pop.Filter) ([]*cata
 	return cln.makeImages(imgs), nil
 }
 
+func (cln *Client) fetchNetworks(ctx context.Context, filter *pop.Filter) ([]*catalogue.Network, error) {
+	var rnets []*pop.Network
+
+	op := func(stub pop.PopClient) error {
+		nlist, err := stub.Networks(ctx, filter)
+		if err != nil {
+			return err
+		}
+
+		if nlist == nil {
+			rnets = []*pop.Network{}
+		} else {
+			rnets = nlist.List
+		}
+
+		return nil
+	}
+
+	if err := cln.doRetry(op); err != nil {
+		return nil, err
+	}
+
+	return cln.makeNetworks(rnets), nil
+}
+
 func (cln *Client) fetchServers(ctx context.Context, filter *pop.Filter) ([]*catalogue.Server, error) {
 	var conts []*pop.Container
 
@@ -127,6 +176,35 @@ func (cln *Client) makeImages(imgs []*pop.Image) []*catalogue.NFVImage {
 	}
 
 	return nfvImgs
+}
+
+func (cln *Client) makeNetwork(net *pop.Network) *catalogue.Network {
+	subs := make([]*catalogue.Subnet, len(net.Subnets))
+
+	for i, rsub := range net.Subnets {
+		subs[i] = &catalogue.Subnet{
+			ExtID:     net.Id,
+			CIDR:      rsub.Cidr,
+			GatewayIP: rsub.Gateway,
+		}
+	}
+
+	return &catalogue.Network{
+		ExtID:    net.Id,
+		Name:     net.Name,
+		External: net.External,
+		Subnets:  subs,
+	}
+}
+
+func (cln *Client) makeNetworks(rnets []*pop.Network) []*catalogue.Network {
+	nets := make([]*catalogue.Network, len(rnets))
+
+	for i, rnet := range rnets {
+		nets[i] = cln.makeNetwork(rnet)
+	}
+
+	return nets
 }
 
 func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *catalogue.Server, err error) {
