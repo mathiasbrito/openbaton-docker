@@ -2,17 +2,16 @@ package client
 
 import (
 	"errors"
-	
+
 	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 
-	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/golang/protobuf/ptypes/empty"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
-
 
 var (
 	// errInvalidSession signals that the session is not valid anymore.

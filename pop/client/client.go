@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mcilloni/go-openbaton/catalogue"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"net/url"
 )
 
 //go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
@@ -74,8 +75,18 @@ type Credentials struct {
 }
 
 func extractCreds(vimInstance *catalogue.VIMInstance) Credentials {
+	host := vimInstance.AuthURL
+
+	// try to parse the AuthURL as an URL (it should be).
+	// In case this fails, our last resort will be to use it as an host, hoping for the best;
+	// if it is broken, it will fail later during the first request.
+	hostURL, err := url.Parse(vimInstance.AuthURL)
+	if err == nil {
+		host = hostURL.Host
+	}
+
 	return Credentials{
-		Host:     vimInstance.AuthURL,
+		Host:     host,
 		Username: vimInstance.Username,
 		Password: vimInstance.Password,
 	}

@@ -1,0 +1,18 @@
+[vnfm]
+type = "docker"
+endpoint = "docker-endpoint"
+description = "Docker VNFM"
+timeout = 2000
+
+    [vnfm.logger]
+    level = "DEBUG"
+    use-colors = true
+
+[amqp]
+host = "localhost"
+username = "admin"
+password = "openbaton"
+
+    [amqp.exchange]
+    name = "openbaton-exchange"
+

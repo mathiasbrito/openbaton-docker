@@ -42,7 +42,7 @@ func (sc *sessionCache) init() {
 	sc.sessions = make(map[Credentials]*session)
 }
 
-// FlushError is an error type containing any error encountered while executing 
+// FlushError is an error type containing any error encountered while executing
 // FlushSessions.
 type FlushError []error
 

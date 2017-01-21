@@ -206,8 +206,8 @@ func (cln *Client) fetchServers(ctx context.Context, filter *pop.Filter) ([]*cat
 
 func (cln *Client) makeFlavour(flav *pop.Flavour) *catalogue.DeploymentFlavour {
 	return &catalogue.DeploymentFlavour{
-		ExtID:   flav.Id,
-		FlavourKey:    flav.Name,
+		ExtID:      flav.Id,
+		FlavourKey: flav.Name,
 	}
 }
 

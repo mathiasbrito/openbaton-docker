@@ -10,6 +10,7 @@ import (
 	"github.com/mcilloni/go-openbaton/plugin"
 	log "github.com/sirupsen/logrus"
 	"github.com/mcilloni/go-openbaton/util"
+	"github.com/mcilloni/openbaton-docker/pop/client"
 )
 
 var logPath = flag.String("log", "", "path to the optional logfile")
@@ -107,4 +108,6 @@ func main() {
 	}
 
 	<-join
+
+	client.FlushSessions()
 }
