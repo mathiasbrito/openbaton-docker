@@ -19,10 +19,10 @@ type Client struct {
 
 // New returns a Client for given instance, initializing it with
 // credentials extracted from the given VIMInstance.
-func New(inst *catalogue.VIMInstance) Client {
+func New(inst *catalogue.VIMInstance) *Client {
 	c := extractCreds(inst)
 
-	return Client{Credentials: c}
+	return &Client{Credentials: c}
 }
 
 // Info retrieves informations from the current PoP.

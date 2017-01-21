@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -16,7 +17,7 @@ const (
 	// TokenBytes specifies how long a token is.
 	TokenBytes = 32
 
-	loginMethod = "/pop.PoP/Login"
+	loginMethod = "/pop.Pop/Login"
 )
 
 type service struct {
@@ -32,14 +33,20 @@ func newService(cfg Config) (*service, error) {
 		return nil, err
 	}
 
-	return &service{
+	srv := &service{
 		name: cfg.PopName,
 		cln:  cln,
 		sessionManager: sessionManager{
 			tk: make(map[string]struct{}),
 		},
 		users: cfg.Users,
-	}, nil
+	}
+
+	if err := srv.checkDocker(); err != nil {
+		return nil, fmt.Errorf("docker connection is broken: %v", err)
+	}
+
+	return srv, nil
 }
 
 func (svc *service) Info(context.Context, *empty.Empty) (*pop.Infos, error) {
@@ -48,6 +55,11 @@ func (svc *service) Info(context.Context, *empty.Empty) (*pop.Infos, error) {
 		Type:      "docker",
 		Timestamp: time.Now().Unix(),
 	}, nil
+}
+
+func (svc *service) checkDocker() (err error) {
+	_, err = svc.cln.Ping(context.Background())
+	return
 }
 
 func dialDocker(cfg Config) (*client.Client, error) {

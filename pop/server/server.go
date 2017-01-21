@@ -10,13 +10,13 @@ import (
 
 // Server represents the PoP service.
 type Server struct {
-	Config
-	net.Listener
+	Config Config
+	Listener net.Listener
 }
 
-// New initialises a new Server from a configuration file.
-func New(confFile string) (*Server, error) {
-	cfg, err := ReadConfigFile(confFile)
+// New initialises a new Server from viper.
+func New() (*Server, error) {
+	cfg, err := LoadConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -24,6 +24,11 @@ func New(confFile string) (*Server, error) {
 	return &Server{
 		Config: cfg,
 	}, nil
+}
+
+// Close shuts down the Server.
+func (s *Server) Close() error {
+	return s.Listener.Close()
 }
 
 // Serve spawns the service.
@@ -34,7 +39,7 @@ func (s *Server) Serve() error {
 	if proto == "" {
 		proto = pop.DefaultListenProtocol
 	}
-	
+
 	laddr := s.Config.Netaddr
 	if laddr == "" {
 		laddr = pop.DefaultListenAddress

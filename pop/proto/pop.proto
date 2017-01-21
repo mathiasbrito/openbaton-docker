@@ -10,6 +10,11 @@ service Pop {
   // created or running.
   rpc Containers(Filter) returns (ContainerList);
 
+  // Flavours returns the available flavours.
+  // This doesn't make much sense with containers, but it's here to 
+  // better abstract the PoP.
+  rpc Flavours(Filter) returns (FlavourList);
+
   // Images returns the images available in the PoP.
   rpc Images(Filter) returns (ImageList);
 
@@ -60,6 +65,15 @@ message Endpoint {
 
 message Filter {
   string id = 1; 
+}
+
+message Flavour {
+  string id = 1;
+  string name = 2;
+}
+
+message FlavourList {
+  repeated Flavour list = 1;
 }
 
 message Image {

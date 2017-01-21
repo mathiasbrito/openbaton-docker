@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/satori/go.uuid"
 )
 
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
@@ -28,6 +29,32 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 	}
 
 	return svc.getContainerInfos()
+}
+
+var flavours = &pop.FlavourList{
+	List: []*pop.Flavour{
+		{
+			Id:   uuid.NewV4().String(),
+			Name: "docker.container",
+		},
+	},
+}
+
+// Flavours are not necessary; the only reason they are implemented it's because they exist in the
+// OpenStack/Amazon/... world, and so the NFVO expects one of them.
+// Letting the PoP declare fake containers gives an appearance of continuity with the rest of the NFV world.
+func (*service) Flavours(ctx context.Context, filter *pop.Filter) (*pop.FlavourList, error) {
+	if filter.Id != "" {
+		for _, fl := range flavours.List {
+			if fl.Id == filter.Id {
+				return &pop.FlavourList{List: []*pop.Flavour{fl}}, nil
+			}
+		}
+
+		return nil, fmt.Errorf("unsupported flavour with id %s", filter.Id)
+	}
+
+	return flavours, nil
 }
 
 func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageList, error) {
@@ -63,17 +90,10 @@ func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.Netw
 }
 
 func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
-	dockerConts, err := svc.getDockerContainersForStatus("created")
+	dockerConts, err := svc.getDockerContainers()
 	if err != nil {
 		return nil, err
 	}
-
-	runningConts, err := svc.getDockerContainersForStatus("running")
-	if err != nil {
-		return nil, err
-	}
-
-	dockerConts = append(dockerConts, runningConts...)
 
 	conts := make([]*pop.Container, len(dockerConts))
 
@@ -93,8 +113,8 @@ func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
 	return &pop.ContainerList{List: conts}, nil
 }
 
-func (svc *service) getDockerContainersForStatus(status string) ([]types.Container, error) {
-	filts, err := filters.FromParam("status=" + status)
+func (svc *service) getDockerContainers() ([]types.Container, error) {
+	filts, err := filters.FromParam(`{"status": {"created": true, "running": true}}`)
 	if err != nil {
 		return nil, err
 	}
@@ -200,16 +220,10 @@ func extractEndpoint(endpointSettings *network.EndpointSettings) *pop.Endpoint {
 
 	// IPAMConfig may contain pre-allocated IP addresses for a created, but not yet started, container.
 	if endpointSettings.IPAddress != "" {
-		if endpointSettings.IPAMConfig != nil {
-			ipv4 = &pop.Ip{
-				Address: endpointSettings.IPAMConfig.IPv4Address,
-			}
-		}
-	} else {
 		fullAddr := fmt.Sprintf("%s/%d", endpointSettings.IPAddress, endpointSettings.IPPrefixLen)
 		_, ipnet, err := net.ParseCIDR(fullAddr)
 		if err != nil {
-			panic("should not happen")
+			panic("should not happen: " + err.Error())
 		}
 
 		ipv4 = &pop.Ip{
@@ -219,19 +233,19 @@ func extractEndpoint(endpointSettings *network.EndpointSettings) *pop.Endpoint {
 				Gateway: endpointSettings.Gateway,
 			},
 		}
+	} else {
+		if endpointSettings.IPAMConfig != nil {
+			ipv4 = &pop.Ip{
+				Address: endpointSettings.IPAMConfig.IPv4Address,
+			}
+		}
 	}
 
 	if endpointSettings.GlobalIPv6Address != "" {
-		if endpointSettings.IPAMConfig != nil {
-			ipv6 = &pop.Ip{
-				Address: endpointSettings.IPAMConfig.IPv6Address,
-			}
-		}
-	} else {
 		fullAddr := fmt.Sprintf("%s/%d", endpointSettings.GlobalIPv6Address, endpointSettings.GlobalIPv6PrefixLen)
 		_, ipnet, err := net.ParseCIDR(fullAddr)
 		if err != nil {
-			panic("should not happen")
+			panic("should not happen: " + err.Error())
 		}
 
 		ipv6 = &pop.Ip{
@@ -240,6 +254,12 @@ func extractEndpoint(endpointSettings *network.EndpointSettings) *pop.Endpoint {
 				Cidr:    ipnet.String(),
 				Gateway: endpointSettings.IPv6Gateway,
 			},
+		}
+	} else {
+		if endpointSettings.IPAMConfig != nil {
+			ipv6 = &pop.Ip{
+				Address: endpointSettings.IPAMConfig.IPv6Address,
+			}
 		}
 	}
 

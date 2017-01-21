@@ -74,5 +74,9 @@ func FlushSessions() error {
 
 	cache.init()
 
+	if len(ret) == 0 {
+		return nil
+	}
+
 	return ret
 }

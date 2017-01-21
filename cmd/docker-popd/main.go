@@ -1,27 +1,15 @@
 package main
 
 import (
-    "net"
-    
-	"google.golang.org/grpc"
+    "fmt"
+    "os"
 
-    log "github.com/sirupsen/logrus"
+    "github.com/mcilloni/openbaton-docker/cmd/docker-popd/cmd"
 )
 
 func main() {
-    lis, err := net.Listen("tcp", ":60000")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    srv := grpc.NewServer(
-        grpc.StreamInterceptor(streamInterceptor),
-        grpc.UnaryInterceptor(unaryInterceptor),
-    )
-
-    pop.RegisterPoPServer(srv, routes{})
-    
-    if err := srv.Serve(lis); err != nil {
-        log.Fatal(err)
+    if err := cmd.RootCmd.Execute(); err != nil {
+        fmt.Println(err)
+        os.Exit(-1)
     }
 }

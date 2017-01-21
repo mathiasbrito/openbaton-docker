@@ -8,6 +8,30 @@ import (
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
+// Flavour returns the flavour having the given id as an OpenBaton DeploymentFlavour.
+func (cln *Client) Flavour(ctx context.Context, id string) (*catalogue.DeploymentFlavour, error) {
+	flavs, err := cln.fetchFlavours(ctx, &pop.Filter{Id: id})
+	if err != nil {
+		return nil, err
+	}
+
+	switch len(flavs) {
+	case 0:
+		return nil, nil
+
+	case 1:
+		return flavs[0], nil
+
+	default:
+		return nil, fmt.Errorf("too many flavours returned from query")
+	}
+}
+
+// Flavours returns all the available flavours as OpenBaton DeploymentFlavour.
+func (cln *Client) Flavours(ctx context.Context) ([]*catalogue.DeploymentFlavour, error) {
+	return cln.fetchFlavours(ctx, &pop.Filter{})
+}
+
 // Image returns the image on the server having the given id as an OpenBaton NFVImage struct.
 func (cln *Client) Image(ctx context.Context, id string) (*catalogue.NFVImage, error) {
 	imgs, err := cln.fetchImages(ctx, &pop.Filter{Id: id})
@@ -78,6 +102,31 @@ func (cln *Client) Server(ctx context.Context, id string) (*catalogue.Server, er
 // Servers returns the containers on the server as OpenBaton Server structs.
 func (cln *Client) Servers(ctx context.Context) ([]*catalogue.Server, error) {
 	return cln.fetchServers(ctx, &pop.Filter{})
+}
+
+func (cln *Client) fetchFlavours(ctx context.Context, filter *pop.Filter) ([]*catalogue.DeploymentFlavour, error) {
+	var rflavs []*pop.Flavour
+
+	op := func(stub pop.PopClient) error {
+		flist, err := stub.Flavours(ctx, filter)
+		if err != nil {
+			return err
+		}
+
+		if flist == nil {
+			rflavs = []*pop.Flavour{}
+		} else {
+			rflavs = flist.List
+		}
+
+		return nil
+	}
+
+	if err := cln.doRetry(op); err != nil {
+		return nil, err
+	}
+
+	return cln.makeFlavours(rflavs), nil
 }
 
 func (cln *Client) fetchImages(ctx context.Context, filter *pop.Filter) ([]*catalogue.NFVImage, error) {
@@ -153,6 +202,23 @@ func (cln *Client) fetchServers(ctx context.Context, filter *pop.Filter) ([]*cat
 	}
 
 	return cln.makeServers(ctx, conts)
+}
+
+func (cln *Client) makeFlavour(flav *pop.Flavour) *catalogue.DeploymentFlavour {
+	return &catalogue.DeploymentFlavour{
+		ExtID:   flav.Id,
+		FlavourKey:    flav.Name,
+	}
+}
+
+func (cln *Client) makeFlavours(flavs []*pop.Flavour) []*catalogue.DeploymentFlavour {
+	depFlavs := make([]*catalogue.DeploymentFlavour, len(flavs))
+
+	for i, flav := range flavs {
+		depFlavs[i] = cln.makeFlavour(flav)
+	}
+
+	return depFlavs
 }
 
 func (cln *Client) makeImage(img *pop.Image) *catalogue.NFVImage {

@@ -4,8 +4,20 @@ import (
 	"io"
 	"os"
 
+	"github.com/spf13/viper"
 	"github.com/BurntSushi/toml"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/docker/docker/client"
 )
+
+// DefaultConfig is a sane template config for a local server.
+var DefaultConfig = Config{
+	PopName: "docker-popd",
+	Proto: pop.DefaultListenProtocol,
+	Netaddr: pop.DefaultListenAddress,
+	Users: Users{},
+	DockerdHost: client.DefaultDockerHost,
+}
 
 // Config for the PoP service.
 type Config struct {
@@ -17,21 +29,19 @@ type Config struct {
 	// Add TLS here
 }
 
-// ReadConfig reads a config from a Reader.
-func ReadConfig(r io.Reader) (cfg Config, err error) {
-	_, err = toml.DecodeReader(r, &cfg)
+// Load reads a config from viper.
+func LoadConfig() (cfg Config, err error) {
+	err = viper.Unmarshal(&cfg)
 	return
 }
 
-// ReadConfigFile reads a config from a file.
-func ReadConfigFile(fileName string) (cfg Config, err error) {
-	_, err = toml.DecodeFile(fileName, &cfg)
-	return
+func (cfg Config) Store(w io.Writer) error {
+	return toml.NewEncoder(w).Encode(cfg)
 }
 
 // Store stores a config into a file. It won't replace an existing file if
 // overwrite is false.
-func (cfg Config) Store(fileName string, overwrite bool) error {
+func (cfg Config) StoreFile(fileName string, overwrite bool) error {
 	if !overwrite {
 		if _, err := os.Stat(fileName); os.IsNotExist(err) {
 			return err
@@ -44,7 +54,5 @@ func (cfg Config) Store(fileName string, overwrite bool) error {
 	}
 	defer file.Close()
 
-	enc := toml.NewEncoder(file)
-
-	return enc.Encode(cfg)
+	return cfg.Store(file)
 }
