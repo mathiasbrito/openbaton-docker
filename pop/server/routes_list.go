@@ -18,7 +18,7 @@ import (
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
 	// filter for a container with the given ID
 	if filter.Id != "" {
-		cont, err := svc.getSingleContainerInfo(filter.Id)
+		cont, err := svc.getSingleContainerInfo(ctx, filter.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -28,17 +28,18 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 		}, nil
 	}
 
-	return svc.getContainerInfos()
+	return svc.getContainerInfos(ctx)
 }
 
-var flavours = &pop.FlavourList{
-	List: []*pop.Flavour{
-		{
-			Id:   uuid.NewV4().String(),
-			Name: "docker.container",
-		},
-	},
-}
+var (
+	dockerFlavour = &pop.Flavour {
+		Id:   uuid.NewV4().String(),
+		Name: "docker.container",
+	}
+	flavours = &pop.FlavourList{
+		List: []*pop.Flavour{dockerFlavour},
+	}
+)
 
 // Flavours are not necessary; the only reason they are implemented it's because they exist in the
 // OpenStack/Amazon/... world, and so the NFVO expects one of them.
@@ -60,7 +61,7 @@ func (*service) Flavours(ctx context.Context, filter *pop.Filter) (*pop.FlavourL
 func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageList, error) {
 	// filter for an image with the given ID
 	if filter.Id != "" {
-		img, err := svc.getSingleImageInfo(filter.Id)
+		img, err := svc.getSingleImageInfo(ctx, filter.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -70,13 +71,13 @@ func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageL
 		}, nil
 	}
 
-	return svc.getImageInfos()
+	return svc.getImageInfos(ctx)
 }
 
 func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.NetworkList, error) {
 	// filter for a network with the given ID
 	if filter.Id != "" {
-		netw, err := svc.getSingleNetworkInfo(filter.Id)
+		netw, err := svc.getSingleNetworkInfo(ctx, filter.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -86,11 +87,11 @@ func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.Netw
 		}, nil
 	}
 
-	return svc.getNetworkInfos()
+	return svc.getNetworkInfos(ctx)
 }
 
-func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
-	dockerConts, err := svc.getDockerContainers()
+func (svc *service) getContainerInfos(ctx context.Context) (*pop.ContainerList, error) {
+	dockerConts, err := svc.getDockerContainers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,20 +114,20 @@ func (svc *service) getContainerInfos() (*pop.ContainerList, error) {
 	return &pop.ContainerList{List: conts}, nil
 }
 
-func (svc *service) getDockerContainers() ([]types.Container, error) {
+func (svc *service) getDockerContainers(ctx context.Context) ([]types.Container, error) {
 	filts, err := filters.FromParam(`{"status": {"created": true, "running": true}}`)
 	if err != nil {
 		return nil, err
 	}
 
-	return svc.cln.ContainerList(context.Background(), types.ContainerListOptions{
+	return svc.cln.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,
 		Filters: filts,
 	})
 }
 
-func (svc *service) getImageInfos() (*pop.ImageList, error) {
-	dockerImgs, err := svc.cln.ImageList(context.Background(), types.ImageListOptions{})
+func (svc *service) getImageInfos(ctx context.Context) (*pop.ImageList, error) {
+	dockerImgs, err := svc.cln.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -143,8 +144,8 @@ func (svc *service) getImageInfos() (*pop.ImageList, error) {
 	return &pop.ImageList{List: imgs}, nil
 }
 
-func (svc *service) getNetworkInfos() (*pop.NetworkList, error) {
-	dockerNets, err := svc.cln.NetworkList(context.Background(), types.NetworkListOptions{})
+func (svc *service) getNetworkInfos(ctx context.Context) (*pop.NetworkList, error) {
+	dockerNets, err := svc.cln.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +158,8 @@ func (svc *service) getNetworkInfos() (*pop.NetworkList, error) {
 	return &pop.NetworkList{List: nets}, nil
 }
 
-func (svc *service) getSingleContainerInfo(id string) (*pop.Container, error) {
-	dcont, err := svc.cln.ContainerInspect(context.Background(), id)
+func (svc *service) getSingleContainerInfo(ctx context.Context, id string) (*pop.Container, error) {
+	dcont, err := svc.cln.ContainerInspect(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -187,8 +188,8 @@ func (svc *service) getSingleContainerInfo(id string) (*pop.Container, error) {
 	}, nil
 }
 
-func (svc *service) getSingleImageInfo(id string) (*pop.Image, error) {
-	dimg, _, err := svc.cln.ImageInspectWithRaw(context.Background(), id)
+func (svc *service) getSingleImageInfo(ctx context.Context, id string) (*pop.Image, error) {
+	dimg, _, err := svc.cln.ImageInspectWithRaw(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +207,8 @@ func (svc *service) getSingleImageInfo(id string) (*pop.Image, error) {
 	}, nil
 }
 
-func (svc *service) getSingleNetworkInfo(id string) (*pop.Network, error) {
-	dnet, err := svc.cln.NetworkInspect(context.Background(), id)
+func (svc *service) getSingleNetworkInfo(ctx context.Context, id string) (*pop.Network, error) {
+	dnet, err := svc.cln.NetworkInspect(ctx, id)
 	if err != nil {
 		return nil, err
 	}

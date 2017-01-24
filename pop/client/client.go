@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mcilloni/go-openbaton/catalogue"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
-	"net/url"
 )
 
 //go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto

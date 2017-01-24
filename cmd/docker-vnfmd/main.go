@@ -10,11 +10,14 @@ import (
 	_ "github.com/mcilloni/go-openbaton/vnfm/amqp" // import needed to load the driver
 	"github.com/mcilloni/go-openbaton/vnfm/config"
 	log "github.com/sirupsen/logrus"
+	"github.com/mcilloni/go-openbaton/util"
 )
 
 var confPath = flag.String("cfg", "config.toml", "a TOML file to be loaded as config")
 
 func main() {
+	tag := util.FuncName()
+
 	flag.Parse()
 
 	cfg, err := config.LoadFile(*confPath)
@@ -41,16 +44,17 @@ func main() {
 	join := make(chan struct{})
 
 	go func() {
+		tag := util.FuncName()
+		
 		<-sigChan
 
 		l.WithFields(log.Fields{
-			"tag": "dummy-main-sigint_callback",
+			"tag": tag,
 		}).Warn("interrupt signal received, quitting")
 
 		if err := svc.Stop(); err != nil {
-			l.WithFields(log.Fields{
-				"tag": "dummy-main-sigint_callback",
-				"err": err,
+			l.WithError(err).WithFields(log.Fields{
+				"tag": tag,
 			}).Fatal("stopping service failed")
 		}
 
@@ -58,15 +62,14 @@ func main() {
 	}()
 
 	if err = svc.Serve(); err != nil {
-		l.WithFields(log.Fields{
-			"tag": "dummy-main",
-			"err": err,
+		l.WithError(err).WithFields(log.Fields{
+			"tag": tag,
 		}).Fatal("VNFM failed during execution")
 	}
 
 	<-join
 
 	l.WithFields(log.Fields{
-		"tag": "dummy-main",
+		"tag": tag,
 	}).Info("exiting cleanly")
 }
