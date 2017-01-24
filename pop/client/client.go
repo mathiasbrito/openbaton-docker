@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mcilloni/go-openbaton/catalogue"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 )
 
 //go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
@@ -15,13 +15,13 @@ import (
 // Pop-protocol values into OpenBaton catalogue types.
 // Clients use cached connections, and they are identified by their Credentials.
 type Client struct {
-	Credentials Credentials
+	Credentials creds.Credentials
 }
 
 // New returns a Client for given instance, initializing it with
 // credentials extracted from the given VIMInstance.
 func New(inst *catalogue.VIMInstance) *Client {
-	c := extractCreds(inst)
+	c := creds.FromVIM(inst)
 
 	return &Client{Credentials: c}
 }
@@ -65,36 +65,4 @@ func (cln *Client) stub() (pop.PopClient, error) {
 	}
 
 	return sess.stub(), nil
-}
-
-// Credentials to connect and authenticate with a Pop server.
-type Credentials struct {
-	Host     string
-	Username string
-	Password string
-}
-
-func extractCreds(vimInstance *catalogue.VIMInstance) Credentials {
-	host := vimInstance.AuthURL
-
-	// try to parse the AuthURL as an URL (it should be).
-	// In case this fails, our last resort will be to use it as an host, hoping for the best;
-	// if it is broken, it will fail later during the first request.
-	hostURL, err := url.Parse(vimInstance.AuthURL)
-	if err == nil {
-		host = hostURL.Host
-	}
-
-	return Credentials{
-		Host:     host,
-		Username: vimInstance.Username,
-		Password: vimInstance.Password,
-	}
-}
-
-func (c *Credentials) toPop() *pop.Credentials {
-	return &pop.Credentials{
-		Username: c.Username,
-		Password: c.Password,
-	}
 }

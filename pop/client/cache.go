@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"sync"
+	
+	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 )
 
 var cache sessionCache
@@ -15,10 +17,10 @@ func init() {
 type sessionCache struct {
 	lock sync.Mutex
 
-	sessions map[Credentials]*session
+	sessions map[creds.Credentials]*session
 }
 
-func (sc *sessionCache) get(c Credentials) (*session, error) {
+func (sc *sessionCache) get(c creds.Credentials) (*session, error) {
 	sc.lock.Lock()
 	defer sc.lock.Unlock()
 
@@ -39,7 +41,7 @@ func (sc *sessionCache) get(c Credentials) (*session, error) {
 }
 
 func (sc *sessionCache) init() {
-	sc.sessions = make(map[Credentials]*session)
+	sc.sessions = make(map[creds.Credentials]*session)
 }
 
 // FlushError is an error type containing any error encountered while executing

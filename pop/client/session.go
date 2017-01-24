@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 )
 
 var (
@@ -30,7 +31,7 @@ type session struct {
 
 // newSession initialises a session, authenticating into the service
 // and getting a token.
-func newSession(creds Credentials) (*session, error) {
+func newSession(creds creds.Credentials) (*session, error) {
 	sess := new(session)
 
 	target := creds.Host
@@ -53,7 +54,7 @@ func newSession(creds Credentials) (*session, error) {
 
 	s := sess.stub()
 
-	tk, err := s.Login(context.Background(), creds.toPop())
+	tk, err := s.Login(context.Background(), creds.ToPop())
 	if err != nil {
 		return nil, err
 	}

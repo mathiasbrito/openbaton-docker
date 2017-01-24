@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	
 	"github.com/mcilloni/openbaton-docker/pop/client"
+	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 	"github.com/mcilloni/openbaton-docker/pop/server"
 	log "github.com/sirupsen/logrus"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
@@ -22,7 +23,7 @@ const (
 var (
 	cfg server.Config
 	cln = client.Client{
-		Credentials: client.Credentials{
+		Credentials: creds.Credentials{
 			Host: laddr,
 			Username: uname,
 			Password: pass,
@@ -91,7 +92,7 @@ func TestLogin(tst *testing.T) {
 
 func TestLoginFail(tst *testing.T) {
 	brokenClient := client.Client{
-		Credentials: client.Credentials{
+		Credentials: creds.Credentials{
 			Username: "wrong user", 
 			Password: "random pass",
 		},

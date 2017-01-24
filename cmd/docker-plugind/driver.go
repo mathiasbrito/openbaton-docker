@@ -6,16 +6,20 @@ import (
 
 	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/go-openbaton/util"
-	log "github.com/sirupsen/logrus"
 	"github.com/mcilloni/openbaton-docker/pop/client"
+	"github.com/mcilloni/openbaton-docker/pop/client/creds"
+	"github.com/mcilloni/openbaton-docker/pop/mgmt"
+	log "github.com/sirupsen/logrus"
 )
 
 // driver for the Docker plugin.
 type driver struct {
 	*log.Logger
+	managers map[creds.Credentials]mgmt.VIMManager
+	accessor mgmt.AMQPChannelAccessor
 }
 
-func (d driver) AddFlavour(vimInstance *catalogue.VIMInstance, deploymentFlavour *catalogue.DeploymentFlavour) (*catalogue.DeploymentFlavour, error) {
+func (d *driver) AddFlavour(vimInstance *catalogue.VIMInstance, deploymentFlavour *catalogue.DeploymentFlavour) (*catalogue.DeploymentFlavour, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -25,7 +29,7 @@ func (d driver) AddFlavour(vimInstance *catalogue.VIMInstance, deploymentFlavour
 	return deploymentFlavour, nil
 }
 
-func (d driver) AddImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage, imageFile []byte) (*catalogue.NFVImage, error) {
+func (d *driver) AddImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage, imageFile []byte) (*catalogue.NFVImage, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -35,7 +39,7 @@ func (d driver) AddImage(vimInstance *catalogue.VIMInstance, image *catalogue.NF
 	return image, nil
 }
 
-func (d driver) AddImageFromURL(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage, imageURL string) (*catalogue.NFVImage, error) {
+func (d *driver) AddImageFromURL(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage, imageURL string) (*catalogue.NFVImage, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -45,7 +49,7 @@ func (d driver) AddImageFromURL(vimInstance *catalogue.VIMInstance, image *catal
 	return image, nil
 }
 
-func (d driver) CopyImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage, imageFile []byte) (*catalogue.NFVImage, error) {
+func (d *driver) CopyImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage, imageFile []byte) (*catalogue.NFVImage, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -55,7 +59,7 @@ func (d driver) CopyImage(vimInstance *catalogue.VIMInstance, image *catalogue.N
 	return image, nil
 }
 
-func (d driver) CreateNetwork(vimInstance *catalogue.VIMInstance, network *catalogue.Network) (*catalogue.Network, error) {
+func (d *driver) CreateNetwork(vimInstance *catalogue.VIMInstance, network *catalogue.Network) (*catalogue.Network, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -65,7 +69,7 @@ func (d driver) CreateNetwork(vimInstance *catalogue.VIMInstance, network *catal
 	return network, nil
 }
 
-func (d driver) CreateSubnet(vimInstance *catalogue.VIMInstance, createdNetwork *catalogue.Network, subnet *catalogue.Subnet) (*catalogue.Subnet, error) {
+func (d *driver) CreateSubnet(vimInstance *catalogue.VIMInstance, createdNetwork *catalogue.Network, subnet *catalogue.Subnet) (*catalogue.Subnet, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -75,7 +79,7 @@ func (d driver) CreateSubnet(vimInstance *catalogue.VIMInstance, createdNetwork 
 	return subnet, nil
 }
 
-func (d driver) DeleteFlavour(vimInstance *catalogue.VIMInstance, extID string) (bool, error) {
+func (d *driver) DeleteFlavour(vimInstance *catalogue.VIMInstance, extID string) (bool, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -85,7 +89,7 @@ func (d driver) DeleteFlavour(vimInstance *catalogue.VIMInstance, extID string) 
 	return true, nil
 }
 
-func (d driver) DeleteImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage) (bool, error) {
+func (d *driver) DeleteImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage) (bool, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -95,7 +99,7 @@ func (d driver) DeleteImage(vimInstance *catalogue.VIMInstance, image *catalogue
 	return true, nil
 }
 
-func (d driver) DeleteNetwork(vimInstance *catalogue.VIMInstance, extID string) (bool, error) {
+func (d *driver) DeleteNetwork(vimInstance *catalogue.VIMInstance, extID string) (bool, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -105,7 +109,7 @@ func (d driver) DeleteNetwork(vimInstance *catalogue.VIMInstance, extID string) 
 	return true, nil
 }
 
-func (d driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id string) error {
+func (d *driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id string) error {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -116,7 +120,7 @@ func (d driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id s
 	return nil
 }
 
-func (d driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnetExtID string) (bool, error) {
+func (d *driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnetExtID string) (bool, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -126,7 +130,7 @@ func (d driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnetE
 	return true, nil
 }
 
-func (d driver) LaunchInstance(
+func (d *driver) LaunchInstance(
 	vimInstance *catalogue.VIMInstance,
 	name, image, Flavour, keypair string,
 	network, secGroup []string,
@@ -141,7 +145,7 @@ func (d driver) LaunchInstance(
 	return newServer(), nil
 }
 
-func (d driver) LaunchInstanceAndWait(
+func (d *driver) LaunchInstanceAndWait(
 	vimInstance *catalogue.VIMInstance,
 	hostname, image, extID, keyPair string,
 	networks, securityGroups []string,
@@ -156,7 +160,7 @@ func (d driver) LaunchInstanceAndWait(
 	return d.LaunchInstanceAndWaitWithIPs(vimInstance, hostname, image, extID, keyPair, networks, securityGroups, s, nil, nil)
 }
 
-func (d driver) LaunchInstanceAndWaitWithIPs(
+func (d *driver) LaunchInstanceAndWaitWithIPs(
 	vimInstance *catalogue.VIMInstance,
 	hostname, image, extID, keyPair string,
 	networks, securityGroups []string,
@@ -175,7 +179,7 @@ func (d driver) LaunchInstanceAndWaitWithIPs(
 	return newServer(), nil
 }
 
-func (d driver) ListFlavours(vimInstance *catalogue.VIMInstance) ([]*catalogue.DeploymentFlavour, error) {
+func (d *driver) ListFlavours(vimInstance *catalogue.VIMInstance) ([]*catalogue.DeploymentFlavour, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -185,7 +189,7 @@ func (d driver) ListFlavours(vimInstance *catalogue.VIMInstance) ([]*catalogue.D
 	return client.New(vimInstance).Flavours(context.Background())
 }
 
-func (d driver) ListImages(vimInstance *catalogue.VIMInstance) ([]*catalogue.NFVImage, error) {
+func (d *driver) ListImages(vimInstance *catalogue.VIMInstance) ([]*catalogue.NFVImage, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -195,7 +199,7 @@ func (d driver) ListImages(vimInstance *catalogue.VIMInstance) ([]*catalogue.NFV
 	return client.New(vimInstance).Images(context.Background())
 }
 
-func (d driver) ListNetworks(vimInstance *catalogue.VIMInstance) ([]*catalogue.Network, error) {
+func (d *driver) ListNetworks(vimInstance *catalogue.VIMInstance) ([]*catalogue.Network, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -205,7 +209,7 @@ func (d driver) ListNetworks(vimInstance *catalogue.VIMInstance) ([]*catalogue.N
 	return client.New(vimInstance).Networks(context.Background())
 }
 
-func (d driver) ListServer(vimInstance *catalogue.VIMInstance) ([]*catalogue.Server, error) {
+func (d *driver) ListServer(vimInstance *catalogue.VIMInstance) ([]*catalogue.Server, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -215,7 +219,7 @@ func (d driver) ListServer(vimInstance *catalogue.VIMInstance) ([]*catalogue.Ser
 	return client.New(vimInstance).Servers(context.Background())
 }
 
-func (d driver) NetworkByID(vimInstance *catalogue.VIMInstance, id string) (*catalogue.Network, error) {
+func (d *driver) NetworkByID(vimInstance *catalogue.VIMInstance, id string) (*catalogue.Network, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -225,7 +229,7 @@ func (d driver) NetworkByID(vimInstance *catalogue.VIMInstance, id string) (*cat
 	return client.New(vimInstance).Network(context.Background(), id)
 }
 
-func (d driver) Quota(vimInstance *catalogue.VIMInstance) (*catalogue.Quota, error) {
+func (d *driver) Quota(vimInstance *catalogue.VIMInstance) (*catalogue.Quota, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -235,7 +239,7 @@ func (d driver) Quota(vimInstance *catalogue.VIMInstance) (*catalogue.Quota, err
 	return newQuota(), nil
 }
 
-func (d driver) SubnetsExtIDs(vimInstance *catalogue.VIMInstance, networkExtID string) ([]string, error) {
+func (d *driver) SubnetsExtIDs(vimInstance *catalogue.VIMInstance, networkExtID string) ([]string, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -245,7 +249,7 @@ func (d driver) SubnetsExtIDs(vimInstance *catalogue.VIMInstance, networkExtID s
 	return []string{networkExtID}, nil
 }
 
-func (d driver) Type(vimInstance *catalogue.VIMInstance) (string, error) {
+func (d *driver) Type(vimInstance *catalogue.VIMInstance) (string, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -255,7 +259,7 @@ func (d driver) Type(vimInstance *catalogue.VIMInstance) (string, error) {
 	return "docker-pop", nil
 }
 
-func (d driver) UpdateFlavour(vimInstance *catalogue.VIMInstance, deploymentFlavour *catalogue.DeploymentFlavour) (*catalogue.DeploymentFlavour, error) {
+func (d *driver) UpdateFlavour(vimInstance *catalogue.VIMInstance, deploymentFlavour *catalogue.DeploymentFlavour) (*catalogue.DeploymentFlavour, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -265,7 +269,7 @@ func (d driver) UpdateFlavour(vimInstance *catalogue.VIMInstance, deploymentFlav
 	return deploymentFlavour, nil
 }
 
-func (d driver) UpdateImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage) (*catalogue.NFVImage, error) {
+func (d *driver) UpdateImage(vimInstance *catalogue.VIMInstance, image *catalogue.NFVImage) (*catalogue.NFVImage, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -275,7 +279,7 @@ func (d driver) UpdateImage(vimInstance *catalogue.VIMInstance, image *catalogue
 	return image, nil
 }
 
-func (d driver) UpdateNetwork(vimInstance *catalogue.VIMInstance, network *catalogue.Network) (*catalogue.Network, error) {
+func (d *driver) UpdateNetwork(vimInstance *catalogue.VIMInstance, network *catalogue.Network) (*catalogue.Network, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
@@ -285,7 +289,7 @@ func (d driver) UpdateNetwork(vimInstance *catalogue.VIMInstance, network *catal
 	return network, nil
 }
 
-func (d driver) UpdateSubnet(vimInstance *catalogue.VIMInstance, createdNetwork *catalogue.Network, subnet *catalogue.Subnet) (*catalogue.Subnet, error) {
+func (d *driver) UpdateSubnet(vimInstance *catalogue.VIMInstance, createdNetwork *catalogue.Network, subnet *catalogue.Subnet) (*catalogue.Subnet, error) {
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{

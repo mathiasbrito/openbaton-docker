@@ -8,28 +8,28 @@ import (
 	"strconv"
 
 	"github.com/mcilloni/go-openbaton/plugin"
-	log "github.com/sirupsen/logrus"
 	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/openbaton-docker/pop/client"
+	log "github.com/sirupsen/logrus"
 )
 
 var logPath = flag.String("log", "", "path to the optional logfile")
 
 var defaultParams = &plugin.Params{
 	BrokerAddress: "localhost",
-	LogFile:  "-",
-	LogLevel: log.DebugLevel,
-	Name:     "openbaton",
-	Port:     5672,
-	Workers:  10,
-	Type:     "docker-pop",
-	Username: "admin",
-	Password: "openbaton",
+	LogFile:       "-",
+	LogLevel:      log.DebugLevel,
+	Name:          "openbaton",
+	Port:          5672,
+	Workers:       10,
+	Type:          "docker-pop",
+	Username:      "admin",
+	Password:      "openbaton",
 }
 
 func main() {
 	tag := util.FuncName()
-	
+
 	flag.Parse()
 
 	args := flag.Args()
@@ -50,15 +50,15 @@ func main() {
 		}
 
 		params = &plugin.Params{
-			Name:     args[0],
+			Name:          args[0],
 			BrokerAddress: args[1],
-			Port:     port,
-			Workers:  workers,
-			Username: args[4],
-			Password: args[5],
-			LogLevel: log.InfoLevel,
-			LogFile: *logPath,
-			Type: "test",
+			Port:          port,
+			Workers:       workers,
+			Username:      args[4],
+			Password:      args[5],
+			LogLevel:      log.InfoLevel,
+			LogFile:       *logPath,
+			Type:          "test",
 		}
 	}
 
@@ -76,6 +76,7 @@ func main() {
 
 	l := svc.Logger()
 
+	d.accessor = svc.ChannelAccessor()
 	d.Logger = l
 
 	sigChan := make(chan os.Signal, 1)
