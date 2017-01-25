@@ -14,6 +14,8 @@ import (
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
+//go:generate protoc -I ./proto ./proto/pop.proto --go_out=plugins=grpc:./proto
+
 const (
 	laddr = "localhost:60000"
 	uname = "user_name"

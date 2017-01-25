@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/mcilloni/openbaton-docker/pop/client"
+	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 	"github.com/ghodss/yaml"
 )
 
@@ -70,15 +71,15 @@ func failf(fstr string, params ...interface{}) {
 
 func cl() *client.Client {
 	return &client.Client{
-		Credentials: creds(),
+		Credentials: credentials(),
 	}
 }
 
-func creds() client.Credentials {
+func credentials() creds.Credentials {
 	user, pass := auth()
 	host := viper.GetString("host")
 
-	return client.Credentials{
+	return creds.Credentials{
 		Host: host, 
 		Username: user, 
 		Password: pass,
@@ -102,6 +103,11 @@ func auth() (string, string) {
 func results(out interface{}, err error) {
 	if err != nil {
 		fail(err)
+	}
+
+	if out == nil {
+		fmt.Println("ok")
+		os.Exit(0)
 	}
 
 	bytes, err := yaml.Marshal(out)

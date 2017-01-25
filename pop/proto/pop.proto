@@ -58,11 +58,12 @@ message Container {
   string id = 1;
   repeated string names = 2;
   string image_id = 3;
-  string command = 4;
-  int64 created = 5;
-  string status = 6;
-  string extended_status = 7;
-  map<string, Endpoint> endpoints = 8;
+  string flavour_id = 4;
+  string command = 5;
+  int64 created = 6;
+  string status = 7;
+  string extended_status = 8;
+  map<string, Endpoint> endpoints = 9;
 }
 
 message ContainerConfig {

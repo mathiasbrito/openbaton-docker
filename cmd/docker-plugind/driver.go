@@ -130,10 +130,12 @@ func (d *driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnet
 	return true, nil
 }
 
+// it's pointless to "wait" for a container creation - it's quick, and it doesn't make sense
+// to have different behaviours.
 func (d *driver) LaunchInstance(
 	vimInstance *catalogue.VIMInstance,
-	name, image, Flavour, keypair string,
-	network, secGroup []string,
+	hostname, image, flavour, keyPair string,
+	networks, securityGroups []string,
 	userData string) (*catalogue.Server, error) {
 
 	tag := util.FuncName()
@@ -142,14 +144,14 @@ func (d *driver) LaunchInstance(
 		"tag": tag,
 	}).Debug("received request")
 
-	return newServer(), nil
+	return d.LaunchInstanceAndWaitWithIPs(vimInstance, hostname, image, flavour, keyPair, networks, securityGroups, userData, nil, nil)
 }
 
 func (d *driver) LaunchInstanceAndWait(
 	vimInstance *catalogue.VIMInstance,
-	hostname, image, extID, keyPair string,
+	hostname, image, flavour, keyPair string,
 	networks, securityGroups []string,
-	s string) (*catalogue.Server, error) {
+	userData string) (*catalogue.Server, error) {
 
 	tag := util.FuncName()
 
@@ -157,14 +159,14 @@ func (d *driver) LaunchInstanceAndWait(
 		"tag": tag,
 	}).Debug("received request")
 
-	return d.LaunchInstanceAndWaitWithIPs(vimInstance, hostname, image, extID, keyPair, networks, securityGroups, s, nil, nil)
+	return d.LaunchInstanceAndWaitWithIPs(vimInstance, hostname, image, flavour, keyPair, networks, securityGroups, userData, nil, nil)
 }
 
 func (d *driver) LaunchInstanceAndWaitWithIPs(
 	vimInstance *catalogue.VIMInstance,
-	hostname, image, extID, keyPair string,
+	hostname, image, flavour, keyPair string,
 	networks, securityGroups []string,
-	s string,
+	userData string,
 	floatingIps map[string]string,
 	keys []*catalogue.Key) (*catalogue.Server, error) {
 

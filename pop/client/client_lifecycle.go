@@ -12,12 +12,15 @@ import (
 func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, ips map[string]string) (*catalogue.Server, error) {
 	var cont *pop.Container
 
-    endpoints := make(map[string]*pop.Endpoint)
-    for net, ip := range ips {
-        endpoints[net] = &pop.Endpoint {
-            Ipv4: &pop.Ip{Address: ip},
-        }
-    }
+	var endpoints map[string]*pop.Endpoint
+	if ips != nil {
+		endpoints = make(map[string]*pop.Endpoint)
+		for net, ip := range ips {
+			endpoints[net] = &pop.Endpoint {
+				Ipv4: &pop.Ip{Address: ip},
+			}
+		}
+	}
 
     cfg := &pop.ContainerConfig{
         Name: name,
@@ -46,6 +49,24 @@ func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, i
 	return cln.makeServer(ctx, cont)
 }
 
+// Delete deletes the container identified by the given filter.
+func (cln *Client) Delete(ctx context.Context, id string) error {
+    op := func(stub pop.PopClient) (err error) {
+        _, err = stub.Delete(ctx, &pop.Filter{Id: id})
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
+	if err := cln.doRetry(op); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Start starts a Server created by Create().
 func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, error) {
     var cont *pop.Container
@@ -57,7 +78,7 @@ func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, err
 		}
 
 		if cont == nil {
-			return errors.New("no container has been created")
+			return errors.New("no container has been started")
 		} 
 
 		return
@@ -68,4 +89,22 @@ func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, err
 	}
 
 	return cln.makeServer(ctx, cont)
+}
+
+// Stop stops the container identified by the given filter.
+func (cln *Client) Stop(ctx context.Context, id string) error {
+    op := func(stub pop.PopClient) (err error) {
+        _, err = stub.Stop(ctx, &pop.Filter{Id: id})
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
+	if err := cln.doRetry(op); err != nil {
+		return err
+	}
+
+	return nil
 }

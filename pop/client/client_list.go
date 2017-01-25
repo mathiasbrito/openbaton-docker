@@ -282,6 +282,14 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 		}
 	}
 
+	var deploymentFlavour *catalogue.DeploymentFlavour
+	if cont.FlavourId != "" {
+		deploymentFlavour, err = cln.Flavour(ctx, cont.FlavourId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	name := ""
 	if cont.Names != nil && len(cont.Names) > 0 {
 		name = cont.Names[0]
@@ -304,6 +312,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 		Status:         cont.Status,
 		ExtendedStatus: cont.ExtendedStatus,
 		Image:          nfvImage,
+		Flavour:		deploymentFlavour,
 		IPs:            ipMap,
 		FloatingIPs:    map[string]string{},
 	}, nil
