@@ -28,14 +28,11 @@ service Pop {
   // Create creates a new container as described.
   rpc Create(ContainerConfig) returns (Container);
 
-  // Delete deletes the container identified by the given filter.
+  // Delete stops and deletes the container identified by the given filter.
   rpc Delete(Filter) returns (google.protobuf.Empty);
 
   // Start starts the container identified by the given filter.
   rpc Start(Filter) returns (Container);
-
-  // Stop stops the container identified by the given filter.
-  rpc Stop(Filter) returns (google.protobuf.Empty);
 
   // login/logout functions
 

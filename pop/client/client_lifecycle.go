@@ -49,7 +49,7 @@ func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, i
 	return cln.makeServer(ctx, cont)
 }
 
-// Delete deletes the container identified by the given filter.
+// Delete stops and deletes the container identified by the given filter.
 func (cln *Client) Delete(ctx context.Context, id string) error {
     op := func(stub pop.PopClient) (err error) {
         _, err = stub.Delete(ctx, &pop.Filter{Id: id})
@@ -65,6 +65,16 @@ func (cln *Client) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// Spawn creates and starts a new server on the remote Pop. An entry in "ips" with an entry IP will randomly assign an IP from the given network.
+func (cln *Client) Spawn(ctx context.Context, name, imageID, flavorID string, ips map[string]string) (*catalogue.Server, error) {
+	srv, err := cln.Create(ctx, name, imageID, flavorID, ips)
+	if err != nil {
+		return nil, err
+	}
+
+	return cln.Start(ctx, srv.ExtID)
 }
 
 // Start starts a Server created by Create().
@@ -89,22 +99,4 @@ func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, err
 	}
 
 	return cln.makeServer(ctx, cont)
-}
-
-// Stop stops the container identified by the given filter.
-func (cln *Client) Stop(ctx context.Context, id string) error {
-    op := func(stub pop.PopClient) (err error) {
-        _, err = stub.Stop(ctx, &pop.Filter{Id: id})
-		if err != nil {
-			return
-		}
-
-		return
-	}
-
-	if err := cln.doRetry(op); err != nil {
-		return err
-	}
-
-	return nil
 }

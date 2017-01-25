@@ -68,32 +68,6 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 // Delete removes the containers identified by the given filter.
 func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empty, error) {
     if filter.Id == "" {
-        return nil, errors.New("no container specified for Delete")
-    }
-
-    if err := svc.cln.ContainerRemove(ctx, filter.Id, types.ContainerRemoveOptions{}); err != nil {
-        return nil, err
-    }
-
-    return &empty.Empty{}, nil
-}
-
-// Start starts the container identified by the given filter.
-func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Container, error) {
-    if filter.Id == "" {
-        return nil, errors.New("no container specified for Start")
-    }
-
-    if err := svc.cln.ContainerStart(ctx, filter.Id, types.ContainerStartOptions{}); err != nil {
-        return nil, err
-    }
-
-    return svc.getSingleContainerInfo(ctx, filter.Id)
-}
-
-// Stop stops the container identified by the given filter.
-func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty, error) {
-    if filter.Id == "" {
         return nil, errors.New("no container specified for Start")
     }
 
@@ -109,4 +83,17 @@ func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty,
     }
 
     return &empty.Empty{}, nil 
+}
+
+// Start starts the container identified by the given filter.
+func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Container, error) {
+    if filter.Id == "" {
+        return nil, errors.New("no container specified for Start")
+    }
+
+    if err := svc.cln.ContainerStart(ctx, filter.Id, types.ContainerStartOptions{}); err != nil {
+        return nil, err
+    }
+
+    return svc.getSingleContainerInfo(ctx, filter.Id)
 }

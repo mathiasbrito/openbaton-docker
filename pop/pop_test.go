@@ -17,7 +17,7 @@ import (
 //go:generate protoc -I ./proto ./proto/pop.proto --go_out=plugins=grpc:./proto
 
 const (
-	laddr = "localhost:60000"
+	laddr = "localhost:61000"
 	uname = "user_name"
 	pass  = "pass_value"
 )
@@ -53,6 +53,53 @@ func init() {
 			log.WithError(err).Fatal("Serve failed")
 		}
 	}()
+}
+
+func TestCreateDelete(tst *testing.T) {
+	srv, err := cln.Spawn(context.Background(), "tst-cont", "nginx:latest", "", nil)
+	if err != nil {
+		tst.Error(err)
+	}
+
+	tst.Logf("spawned server: %s", srv.ExtID)
+
+	srvs, err := cln.Servers(context.Background())
+	if err != nil {
+		tst.Error(err)
+	}
+
+	found := false
+	for _, ss := range srvs {
+		if ss.ExtID == srv.ExtID {
+			tst.Logf("%s found in server list", ss.ExtID)
+
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		tst.Error("spawned server not found")
+	}
+
+	if err := cln.Delete(context.Background(), srv.ExtID); err != nil {
+		tst.Error(err)
+	}
+
+	tst.Logf("deleted server: %s", srv.ExtID)
+
+	srvs, err = cln.Servers(context.Background())
+	if err != nil {
+		tst.Error(err)
+	}
+	
+	for _, ss := range srvs {
+		if ss.ExtID == srv.ExtID {
+			tst.Errorf("deleted server %s is still present", ss.ExtID)
+		}
+	}
+
+	tst.Logf("%s is not in the server list anymore", srv.ExtID)
 }
 
 func TestFlavours(tst *testing.T) {
