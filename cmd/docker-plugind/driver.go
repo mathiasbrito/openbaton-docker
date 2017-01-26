@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
@@ -114,6 +115,7 @@ func (d *driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id 
 
 	d.WithFields(log.Fields{
 		"tag": tag,
+		"server-id": id,
 	}).Debug("received request")
 
 	time.Sleep(3 * time.Second)
@@ -174,11 +176,29 @@ func (d *driver) LaunchInstanceAndWaitWithIPs(
 
 	d.WithFields(log.Fields{
 		"tag": tag,
+		"hostname": hostname,
+		"image": image,
+		"flavour": flavour,
 	}).Debug("received request")
 
-	time.Sleep(3 * time.Second)
+	_, err := d.SetupManagement(vimInstance)
+	if err != nil {
+		d.WithError(err).WithFields(log.Fields{
+			"tag": tag,
+			"hostname": hostname,
+			"image": image,
+			"flavour": flavour,
+		})
 
-	return newServer(), nil
+		return nil, errors.New("VIM Management refused to start. See the plugin log")
+	}
+
+	ips := map[string]string{}
+	for _, n := range networks {
+		ips[n] = "" // gets a random IP
+	}
+
+	return client.New(vimInstance).Create(context.Background(), hostname, image, flavour, ips)
 }
 
 func (d *driver) ListFlavours(vimInstance *catalogue.VIMInstance) ([]*catalogue.DeploymentFlavour, error) {

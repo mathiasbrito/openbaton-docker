@@ -7,10 +7,12 @@ import (
 
 	"github.com/mcilloni/go-openbaton/catalogue"
 	log "github.com/sirupsen/logrus"
+	"github.com/mcilloni/openbaton-docker/pop/mgmt"
 )
 
 type handl struct {
 	*log.Logger
+	acc mgmt.VNFMChannelAccessor
 }
 
 // ActionForResume uses the given VNFR and VNFCInstance to return a valid
@@ -58,22 +60,6 @@ func (h handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, scripts
 		"vnfr-name": vnfr.Name,
 	}).Info("instantiating VNFR")
 
-	vnfr.Configurations.Append(&catalogue.ConfigurationParameter{
-		ConfKey: "new_key",
-		Value:   "new_value",
-	})
-
-	time.Sleep(3 * time.Second)
-
-	/*if vnfr.Name == "docker-vnfm-client" {
-		h.WithFields(log.Fields{
-			"tag":  "docker-vnfm-handl-instantiate",
-			"vnfr-name": vnfr.Name,
-		}).Info("purposefully delaying VNFR")
-
-		time.Sleep(3 * time.Second)
-	}*/
-	
 	return vnfr, nil
 }
 

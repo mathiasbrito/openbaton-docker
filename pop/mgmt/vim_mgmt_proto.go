@@ -8,10 +8,12 @@ import (
 )
 
 type (
+	checkParams string
 	startParams string
 )
 
 var (
+	fnCheck = "check"
 	fnStart = "start"
 )
 
@@ -25,7 +27,7 @@ type request struct {
 }
 
 type response struct {
-	Value interface{} `json:",omitempty"`
+	Value json.RawMessage `json:",omitempty"`
 	Error string      `json:",omitempty"`
 }
 

@@ -7,15 +7,44 @@ import (
 
 	"github.com/streadway/amqp"
 	"github.com/mcilloni/go-openbaton/util"
+	"github.com/mcilloni/go-openbaton/catalogue"
 )
 
 var (
+	ErrInternal = errors.New("interal error")
 	ErrTooFewParams    = errors.New("not enough parameters for function")
 	ErrMalformedParams = errors.New("malformed parameters")
 )
 
 type Handler interface {
+	Check(id string) (*catalogue.Server, error)
 	Start(id string) error
+}
+
+func (m *manager) doRequest(req request) response {
+	var val interface{}
+	var err error
+	
+	switch strings.ToLower(req.Func) {
+	case fnCheck:
+		val, err = m.handleCheck(req.Params)
+
+	case fnStart:
+		err = m.handleStart(req.Params)
+
+	}
+
+	var valB json.RawMessage
+	if val != nil {
+		valB, err = json.Marshal(val)
+	}
+
+	errStr := ""
+	if err != nil {
+		errStr = err.Error()
+	}
+
+	return response{Value: valB, Error: errStr}
 }
 
 func (m *manager) handle(cnl *amqp.Channel, delivery amqp.Delivery) {
@@ -27,16 +56,7 @@ func (m *manager) handle(cnl *amqp.Channel, delivery amqp.Delivery) {
 		return
 	}
 
-	var resp response
-
-	switch strings.ToLower(req.Func) {
-	case fnStart:
-		if err := m.handleStart(req.Params); err != nil {
-			resp.Error = err.Error()
-		}		
-	}
-
-	respBytes, err := json.Marshal(resp)
+	respBytes, err := json.Marshal(m.doRequest(req))
 	if err != nil {
 		m.l.WithError(err).WithField("tag", tag).Error("error while handling delivery")
 		return
@@ -64,6 +84,15 @@ func (m *manager) handle(cnl *amqp.Channel, delivery amqp.Delivery) {
 		m.l.WithError(err).WithField("tag", tag).Error("error while acknowledging delivery")
 		return
 	}
+}
+
+func (m *manager) handleCheck(params json.RawMessage) (*catalogue.Server, error) {
+	var id checkParams
+	if err := json.Unmarshal(params, &id); err != nil {
+		return nil, ErrMalformedParams
+	}
+
+	return m.handl.Check(string(id))
 }
 
 func (m *manager) handleStart(params json.RawMessage) error {

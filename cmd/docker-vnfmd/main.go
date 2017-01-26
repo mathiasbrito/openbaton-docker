@@ -37,6 +37,7 @@ func main() {
 	l := svc.Logger()
 
 	h.Logger = l
+	h.acc = svc.ChannelAccessor()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)

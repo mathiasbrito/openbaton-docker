@@ -5,11 +5,13 @@ import (
 	"errors"
 
 	"github.com/mcilloni/go-openbaton/vnfm/channel"
+	"github.com/mcilloni/go-openbaton/catalogue"
 )
 
 type VNFMChannelAccessor func() (channel.Channel, error)
 
 type VIMConnector interface {
+	Check(id string) (*catalogue.Server, error)
 	Start(id string) error
 }
 
@@ -23,6 +25,24 @@ func NewConnector(vimname string, acc VNFMChannelAccessor) VIMConnector {
 type conn struct {
 	acc VNFMChannelAccessor
 	id  string
+}
+
+func (c conn) Check(id string) (*catalogue.Server, error) {
+	resp, err := c.request(fnCheck, checkParams(id))
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != "" {
+		return nil, errors.New(resp.Error)
+	}
+
+	var srv *catalogue.Server
+	if err := json.Unmarshal(resp.Value, &srv); err != nil {
+		return nil, err
+	}
+
+	return srv, nil	
 }
 
 func (c conn) Start(id string) error {

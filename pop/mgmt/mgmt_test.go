@@ -10,6 +10,7 @@ import (
 	"github.com/mcilloni/go-openbaton/vnfm/channel"
 	"github.com/streadway/amqp"
     log "github.com/sirupsen/logrus"
+	"github.com/mcilloni/go-openbaton/catalogue"
 )
 
 func init() {
@@ -149,6 +150,10 @@ func (tc testChan) Status() channel.Status {
 
 type handler chan string
 
+func (h handler) Check(id string) (*catalogue.Server, error) {
+	return &catalogue.Server{ID: id}, nil
+}
+
 func (h handler) Start(id string) error {
 	h <- id
 
@@ -164,6 +169,18 @@ func TestAll(t *testing.T) {
 	c := NewConnector(testID, chanChan)
 
     time.Sleep(time.Second)
+
+	sentID := "33"
+	srv, err := c.Check(sentID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("recv %s", srv.ID)
+
+	if srv.ID != sentID {
+		t.Errorf("expecting %s, got %s", sentID, srv.ID)
+	}
 
 	if err := c.Start("testid"); err != nil {
 		t.Fatal(err)

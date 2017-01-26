@@ -14,7 +14,7 @@ var (
 	ErrMgmtUnavailable = errors.New("management is unavailable for this instance")
 )
 
-func (d *driver) Management(vimInstance *catalogue.VIMInstance) (bool, error) {
+func (d *driver) SetupManagement(vimInstance *catalogue.VIMInstance) (bool, error) {
 	if d.accessor == nil {
 		return false, ErrMgmtUnavailable
 	}

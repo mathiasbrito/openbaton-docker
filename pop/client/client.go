@@ -18,8 +18,7 @@ type Client struct {
 	Credentials creds.Credentials
 }
 
-// New returns a Client for given instance, initializing it with
-// credentials extracted from the given VIMInstance.
+// New returns a Client initialized with credentials extracted from a given VIMInstance.
 func New(inst *catalogue.VIMInstance) *Client {
 	c := creds.FromVIM(inst)
 

@@ -23,7 +23,9 @@ var (
 		Short: "A brief description of your application",
 		Long: fmt.Sprintf(`Use docker-pop to control a docker-popd instance.
 		
-By default the server "%s" is used.`, DefaultServer),
+By default the server "%s" is used.
+The client must authenticate with the server either via parameters specified through a POP_AUTH variable in the form
+"username:password" or using the flags described below.`, DefaultServer),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
