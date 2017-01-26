@@ -1,6 +1,6 @@
 {
   "name":"docker-pop-vim-instance",
-  "authUrl":"http://10.0.75.1:60000",
+  "authUrl":"http://localhost:60000",
   "tenant":"tenantName",
   "username":"user_name",
   "password":"password_value",

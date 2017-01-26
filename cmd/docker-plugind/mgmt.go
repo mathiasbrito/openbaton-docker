@@ -15,7 +15,7 @@ var (
 )
 
 func (d *driver) SetupManagement(vimInstance *catalogue.VIMInstance) (bool, error) {
-	if d.accessor == nil {
+	if d.Accessor == nil {
 		return false, ErrMgmtUnavailable
 	}
 
@@ -33,7 +33,7 @@ func (d *driver) SetupManagement(vimInstance *catalogue.VIMInstance) (bool, erro
 	}
 
 	c := creds.FromVIM(vimInstance)
-	d.managers[id] = mgmt.NewManager(id, newHandler(c), d.accessor, d.Logger)
+	d.managers[id] = mgmt.NewManager(id, newHandler(c), d.Accessor, d.Logger)
 
 	return true, nil
 }

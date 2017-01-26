@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/go-openbaton/util"
@@ -15,8 +14,13 @@ import (
 // driver for the Docker plugin.
 type driver struct {
 	*log.Logger
-	managers map[string]mgmt.VIMManager
-	accessor mgmt.AMQPChannelAccessor
+	Accessor mgmt.AMQPChannelAccessor
+	
+	managers map[string]mgmt.VIMManager	
+}
+
+func newDriver() *driver {
+	return &driver{managers: make(map[string]mgmt.VIMManager)}
 }
 
 func (d *driver) AddFlavour(vimInstance *catalogue.VIMInstance, deploymentFlavour *catalogue.DeploymentFlavour) (*catalogue.DeploymentFlavour, error) {
@@ -117,8 +121,7 @@ func (d *driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id 
 		"server-id": id,
 	}).Debug("received request")
 
-	time.Sleep(3 * time.Second)
-	return nil
+	return client.New(vimInstance).Delete(context.Background(), id)
 }
 
 func (d *driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnetExtID string) (bool, error) {

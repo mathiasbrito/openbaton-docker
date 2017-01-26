@@ -62,13 +62,13 @@ func main() {
 		}
 	}
 
-	var d driver
+	d := newDriver()
 
 	if params == defaultParams {
 		fmt.Fprintln(os.Stderr, "warn: using default parameters")
 	}
 
-	svc, err := plugin.New(&d, params)
+	svc, err := plugin.New(d, params)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: while initialising Plugin %s: %v\n", params.Name, err)
 		os.Exit(1)
@@ -76,7 +76,7 @@ func main() {
 
 	l := svc.Logger()
 
-	d.accessor = svc.ChannelAccessor()
+	d.Accessor = svc.ChannelAccessor()
 	d.Logger = l
 
 	sigChan := make(chan os.Signal, 1)

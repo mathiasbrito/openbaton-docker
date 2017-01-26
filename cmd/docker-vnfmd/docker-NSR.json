@@ -1,10 +1,10 @@
 ﻿{
   "name":"docker-test-NS",
-  "vendor":"Fokus",
+  "vendor":"mcilloni",
   "version":"0.1",
   "vnfd":[
     {
-      "vendor":"Fokus",
+      "vendor":"mcilloni",
       "version":"0.1",
       "name":"nginx",
       "type":"server",
