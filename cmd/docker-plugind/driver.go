@@ -8,7 +8,6 @@ import (
 	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/openbaton-docker/pop/client"
-	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 	"github.com/mcilloni/openbaton-docker/pop/mgmt"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,7 +15,7 @@ import (
 // driver for the Docker plugin.
 type driver struct {
 	*log.Logger
-	managers map[creds.Credentials]mgmt.VIMManager
+	managers map[string]mgmt.VIMManager
 	accessor mgmt.AMQPChannelAccessor
 }
 
@@ -188,7 +187,7 @@ func (d *driver) LaunchInstanceAndWaitWithIPs(
 			"hostname": hostname,
 			"image": image,
 			"flavour": flavour,
-		})
+		}).Error("management failed")
 
 		return nil, errors.New("VIM Management refused to start. See the plugin log")
 	}

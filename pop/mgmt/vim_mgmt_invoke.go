@@ -3,9 +3,12 @@ package mgmt
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/mcilloni/go-openbaton/vnfm/channel"
 	"github.com/mcilloni/go-openbaton/catalogue"
+	"github.com/streadway/amqp"
+	"github.com/mcilloni/go-openbaton/util"
 )
 
 type VNFMChannelAccessor func() (channel.Channel, error)
@@ -64,7 +67,85 @@ func (c conn) exchange(req []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return cln.Exchange(c.id, req)
+	cimpl, err := cln.Impl()
+	if err != nil {
+		return nil, err
+	}
+
+	acnl, ok := cimpl.(*amqp.Channel)
+	if !ok {
+		return nil, errors.New("invalid channel - only AMQP is supported")
+	}
+
+	// check if the wanted queue exists. 
+	if _, err := acnl.QueueInspect(c.id); err != nil {
+		return nil, err
+	}
+
+	queue, err := acnl.QueueDeclare(
+		"",    // name
+		false, // durable
+		false, // delete when unused
+		true,  // exclusive
+		false, // noWait
+		nil,   // arguments
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	deliveries, err := acnl.Consume(
+		queue.Name, // queue
+		"",         // consumer
+		true,       // auto-ack
+		false,      // exclusive
+		false,      // no-local
+		false,      // no-wait
+		nil,        // args
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	corrID := util.GenerateID()
+
+	err = acnl.Publish(
+		MgmtExchange,
+		c.id,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:   "text/plain",
+			CorrelationId: corrID,
+			ReplyTo:       queue.Name,
+			Body:          req,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	timeout := time.After(10 * time.Second)
+
+DeliveryLoop:
+	for {
+		select {
+		case <-timeout:
+			break DeliveryLoop
+
+		case delivery, ok := <-deliveries:
+			if !ok {
+				break DeliveryLoop
+			}
+
+			if delivery.CorrelationId == corrID {
+				return delivery.Body, nil
+			}
+		}
+	}
+
+	return nil, errors.New("no reply received")
 }
 
 func (c conn) request(fn string, params interface{}) (response, error) {

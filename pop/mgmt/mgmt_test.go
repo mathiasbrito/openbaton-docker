@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"errors"
 	"github.com/mcilloni/go-openbaton/catalogue/messages"
 	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/go-openbaton/vnfm/channel"
@@ -61,62 +60,11 @@ func (tc testChan) temporaryQueue() (string, error) {
 }
 
 func (tc testChan) Exchange(dest string, msg []byte) ([]byte, error) {
-	replyQueue, err := tc.temporaryQueue()
-	if err != nil {
-		return nil, err
-	}
+	return nil, nil
+}
 
-	deliveries, err := tc.Consume(
-		replyQueue, // queue
-		"",         // consumer
-		true,       // auto-ack
-		false,      // exclusive
-		false,      // no-local
-		false,      // no-wait
-		nil,        // args
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	corrID := util.GenerateID()
-
-	err = tc.Publish(
-		MgmtExchange,
-		dest,
-		false,
-		false,
-		amqp.Publishing{
-			ContentType:   "text/plain",
-			CorrelationId: corrID,
-			ReplyTo:       replyQueue,
-			Body:          msg,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	timeout := time.After(10 * time.Second)
-
-DeliveryLoop:
-	for {
-		select {
-		case <-timeout:
-			break DeliveryLoop
-
-		case delivery, ok := <-deliveries:
-			if !ok {
-				break DeliveryLoop
-			}
-
-			if delivery.CorrelationId == corrID {
-				return delivery.Body, nil
-			}
-		}
-	}
-
-	return nil, errors.New("no reply received")
+func (tc testChan) Impl() (interface{}, error) {
+	return tc.Channel, nil
 }
 
 // NFVOExchange sends a message to the NFVO, and then waits for a reply.
@@ -160,7 +108,7 @@ func (h handler) Start(id string) error {
 	return nil
 }
 
-var testID = "test"
+var testID = "4de36375-7514-4c1f-8f5c-e56de8c08dcf"
 
 func TestAll(t *testing.T) {
 	r := make(chan string, 1)

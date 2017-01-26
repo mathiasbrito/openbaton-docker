@@ -19,15 +19,21 @@ func (d *driver) SetupManagement(vimInstance *catalogue.VIMInstance) (bool, erro
 		return false, ErrMgmtUnavailable
 	}
 
-	c := creds.FromVIM(vimInstance)
+	id := vimInstance.ID
 
-	// if the manager for the given VIMInstance is already on,
-	// then don't do anything, we are already set up
-	if _, on := d.managers[c]; on {
+	// If there is no VIMInstance ID, then finding the VIM is impossible.
+	if id == "" {
 		return false, nil
 	}
 
-	d.managers[c] = mgmt.NewManager(vimInstance.Name, newHandler(c), d.accessor, d.Logger)
+	// if the manager for the given VIMInstance is already on,
+	// then don't do anything, we are already set up
+	if _, on := d.managers[id]; on {
+		return false, nil
+	}
+
+	c := creds.FromVIM(vimInstance)
+	d.managers[id] = mgmt.NewManager(id, newHandler(c), d.accessor, d.Logger)
 
 	return true, nil
 }
@@ -38,6 +44,10 @@ type handler struct {
 
 func newHandler(c creds.Credentials) handler {
 	return handler{client.Client{Credentials: c}}
+}
+
+func (h handler) Check(id string) (*catalogue.Server, error) {
+	return h.cln.Server(context.Background(), id)
 }
 
 func (h handler) Start(id string) error {
