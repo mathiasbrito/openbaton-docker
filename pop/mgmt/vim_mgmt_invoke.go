@@ -126,7 +126,7 @@ func (c conn) exchange(req []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	timeout := time.After(10 * time.Second)
+	timeout := time.After(DefaultTimeout)
 
 DeliveryLoop:
 	for {

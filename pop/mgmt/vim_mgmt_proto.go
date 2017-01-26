@@ -18,6 +18,7 @@ var (
 )
 
 const (
+	DefaultTimeout = vnfmAMQP.DefaultTimeout
 	MgmtExchange = vnfmAMQP.ExchangeDefault
 )
 
