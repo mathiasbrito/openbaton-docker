@@ -12,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
-	"github.com/satori/go.uuid"
 )
 
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
@@ -33,7 +32,7 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 
 var (
 	dockerFlavour = &pop.Flavour {
-		Id:   uuid.NewV4().String(),
+		Id:   "docker-flavour-id",
 		Name: "docker.container",
 	}
 	flavours = &pop.FlavourList{
