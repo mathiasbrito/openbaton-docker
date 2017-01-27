@@ -57,6 +57,7 @@ func (cln *Client) doRetry(op sessionOp) error {
 	}
 }
 
+// stub() is a helper method to make retrieving a stub from the cache quicker.
 func (cln *Client) stub() (pop.PopClient, error) {
 	sess, err := cache.get(cln.Credentials)
 	if err != nil {

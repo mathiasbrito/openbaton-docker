@@ -104,6 +104,7 @@ func (cln *Client) Servers(ctx context.Context) ([]*catalogue.Server, error) {
 	return cln.fetchServers(ctx, &pop.Filter{})
 }
 
+// fetchFlavours fetches and converts pop Flavours into DeploymentFlavours.
 func (cln *Client) fetchFlavours(ctx context.Context, filter *pop.Filter) ([]*catalogue.DeploymentFlavour, error) {
 	var rflavs []*pop.Flavour
 
@@ -129,6 +130,7 @@ func (cln *Client) fetchFlavours(ctx context.Context, filter *pop.Filter) ([]*ca
 	return cln.makeFlavours(rflavs), nil
 }
 
+// fetchImages fetches and converts pop Images into NFVImages.
 func (cln *Client) fetchImages(ctx context.Context, filter *pop.Filter) ([]*catalogue.NFVImage, error) {
 	var imgs []*pop.Image
 
@@ -154,6 +156,7 @@ func (cln *Client) fetchImages(ctx context.Context, filter *pop.Filter) ([]*cata
 	return cln.makeImages(imgs), nil
 }
 
+// fetchNetworks fetches and converts pop Networks into catalogue.Network instances.
 func (cln *Client) fetchNetworks(ctx context.Context, filter *pop.Filter) ([]*catalogue.Network, error) {
 	var rnets []*pop.Network
 
@@ -179,6 +182,7 @@ func (cln *Client) fetchNetworks(ctx context.Context, filter *pop.Filter) ([]*ca
 	return cln.makeNetworks(rnets), nil
 }
 
+// fetchServers gets and creates catalogue.Server instances from pop containers.
 func (cln *Client) fetchServers(ctx context.Context, filter *pop.Filter) ([]*catalogue.Server, error) {
 	var conts []*pop.Container
 
@@ -204,6 +208,7 @@ func (cln *Client) fetchServers(ctx context.Context, filter *pop.Filter) ([]*cat
 	return cln.makeServers(ctx, conts)
 }
 
+// makeFlavour converts a pop Flavour into a DeploymentFlavour.
 func (cln *Client) makeFlavour(flav *pop.Flavour) *catalogue.DeploymentFlavour {
 	return &catalogue.DeploymentFlavour{
 		ExtID:      flav.Id,
@@ -211,6 +216,7 @@ func (cln *Client) makeFlavour(flav *pop.Flavour) *catalogue.DeploymentFlavour {
 	}
 }
 
+// makeFlavours converts a list of pop Flavour into a list of DeploymentFlavour.
 func (cln *Client) makeFlavours(flavs []*pop.Flavour) []*catalogue.DeploymentFlavour {
 	depFlavs := make([]*catalogue.DeploymentFlavour, len(flavs))
 
@@ -221,6 +227,7 @@ func (cln *Client) makeFlavours(flavs []*pop.Flavour) []*catalogue.DeploymentFla
 	return depFlavs
 }
 
+// makeImage converts a pop Image into a NFVImage.
 func (cln *Client) makeImage(img *pop.Image) *catalogue.NFVImage {
 	name := ""
 	if img.Names != nil && len(img.Names) > 0 {
@@ -234,6 +241,7 @@ func (cln *Client) makeImage(img *pop.Image) *catalogue.NFVImage {
 	}
 }
 
+// makeImages converts a list of pop Image into a list of NFVImage.
 func (cln *Client) makeImages(imgs []*pop.Image) []*catalogue.NFVImage {
 	nfvImgs := make([]*catalogue.NFVImage, len(imgs))
 
@@ -244,6 +252,7 @@ func (cln *Client) makeImages(imgs []*pop.Image) []*catalogue.NFVImage {
 	return nfvImgs
 }
 
+// makeNetwork converts a pop Network into a catalogue Network.
 func (cln *Client) makeNetwork(net *pop.Network) *catalogue.Network {
 	subs := make([]*catalogue.Subnet, len(net.Subnets))
 
@@ -263,6 +272,7 @@ func (cln *Client) makeNetwork(net *pop.Network) *catalogue.Network {
 	}
 }
 
+// makeNetwork converts a list of pop Network into a list of catalogue Network.
 func (cln *Client) makeNetworks(rnets []*pop.Network) []*catalogue.Network {
 	nets := make([]*catalogue.Network, len(rnets))
 
@@ -273,7 +283,9 @@ func (cln *Client) makeNetworks(rnets []*pop.Network) []*catalogue.Network {
 	return nets
 }
 
+// makeServer converts a pop Container into a catalogue Server.
 func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *catalogue.Server, err error) {
+	// also fetch the image
 	var nfvImage *catalogue.NFVImage
 	if cont.ImageId != "" {
 		nfvImage, err = cln.Image(ctx, cont.ImageId)
@@ -318,6 +330,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 	}, nil
 }
 
+// makeServers converts a list of pop Containers into a list of catalogue Server.
 func (cln *Client) makeServers(ctx context.Context, conts []*pop.Container) ([]*catalogue.Server, error) {
 	servs := make([]*catalogue.Server, len(conts))
 

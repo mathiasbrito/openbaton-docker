@@ -54,10 +54,13 @@ func newSession(creds creds.Credentials) (*session, error) {
 
 	s := sess.stub()
 
+	// create a new session by logging into the service
 	tk, err := s.Login(context.Background(), creds.ToPop())
 	if err != nil {
 		return nil, err
 	}
+
+	// store the token
 	sess.tok = tk.Value
 
 	return sess, nil
@@ -93,6 +96,7 @@ func (sess *session) interceptor(ctx context.Context, method string, req, reply 
 	return err
 }
 
+// logout logs the session out of the service, invalidating it.
 func (sess *session) logout() error {
 	stub := sess.stub()
 
@@ -108,6 +112,7 @@ func (sess *session) logout() error {
 	return nil
 }
 
+// stub uses the underlying connection to create a new stub. 
 func (sess *session) stub() pop.PopClient {
 	return pop.NewPopClient(sess.conn)
 }

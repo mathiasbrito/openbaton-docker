@@ -6,15 +6,13 @@ import (
 	"testing"
 
 	"google.golang.org/grpc"
-	
+
 	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/mcilloni/openbaton-docker/pop/server"
 	log "github.com/sirupsen/logrus"
-	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
-
-//go:generate protoc -I ./proto ./proto/pop.proto --go_out=plugins=grpc:./proto
 
 const (
 	laddr = "localhost:61000"
@@ -26,7 +24,7 @@ var (
 	cfg server.Config
 	cln = client.Client{
 		Credentials: creds.Credentials{
-			Host: laddr,
+			Host:     laddr,
 			Username: uname,
 			Password: pass,
 		},
@@ -41,7 +39,7 @@ func init() {
 
 	cfg = server.Config{
 		Netaddr: laddr,
-		Users:   server.Users{
+		Users: server.Users{
 			user.Name: user,
 		},
 	}
@@ -92,7 +90,7 @@ func TestCreateDelete(tst *testing.T) {
 	if err != nil {
 		tst.Error(err)
 	}
-	
+
 	for _, ss := range srvs {
 		if ss.ExtID == srv.ExtID {
 			tst.Errorf("deleted server %s is still present", ss.ExtID)
@@ -142,11 +140,11 @@ func TestLogin(tst *testing.T) {
 func TestLoginFail(tst *testing.T) {
 	brokenClient := client.Client{
 		Credentials: creds.Credentials{
-			Username: "wrong user", 
+			Username: "wrong user",
 			Password: "random pass",
 		},
 	}
-	
+
 	_, err := brokenClient.Info(context.Background())
 
 	if err == nil {
@@ -159,7 +157,7 @@ func TestLoginFail(tst *testing.T) {
 func TestLogout(tst *testing.T) {
 	err := client.FlushSessions()
 	if err != nil {
-		tst.Error(err)	
+		tst.Error(err)
 	}
 }
 
@@ -196,7 +194,7 @@ func TestUnauthorized(tst *testing.T) {
 	if err != nil {
 		tst.Error(err)
 	}
-	
+
 	cln := pop.NewPopClient(conn)
 	_, err = cln.Containers(context.Background(), &pop.Filter{})
 	if err == nil {

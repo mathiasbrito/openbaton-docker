@@ -1,4 +1,4 @@
-package pop
+package proto
 
 const (
     // DefaultAddress is the default address for the client to connect to.

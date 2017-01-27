@@ -1,4 +1,4 @@
-package pop
+package proto
 
 import (
 	"google.golang.org/grpc"

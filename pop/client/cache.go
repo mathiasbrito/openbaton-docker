@@ -8,18 +8,25 @@ import (
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 )
 
+// global session cache.
 var cache sessionCache
 
+// The cache contains a map, so it must be initialised at startup.
 func init() {
 	cache.init()
 }
 
 type sessionCache struct {
+	// get() is a critical section
 	lock sync.Mutex
 
+	// Use creds.Credentials (a host,user,password tuple) as a key for a session.
+	// A session authenticated for the given credentials on the given host should be valid.
 	sessions map[creds.Credentials]*session
 }
 
+// get() retrieves or creates a session for the given credentials.
+// It requires a mutex to avoid multiple parallel get() requests. 
 func (sc *sessionCache) get(c creds.Credentials) (*session, error) {
 	sc.lock.Lock()
 	defer sc.lock.Unlock()
@@ -48,6 +55,7 @@ func (sc *sessionCache) init() {
 // FlushSessions.
 type FlushError []error
 
+// Error returns a string that summarises the various errors contained by this FlushError.
 func (errs FlushError) Error() string {
 	buf := bytes.NewBufferString("got errors while closing sessions: ")
 

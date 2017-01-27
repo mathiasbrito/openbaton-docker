@@ -1,3 +1,5 @@
+// Package creds implements a Credentials structure to represent and store Pop credentials.
+// It also provides functions to extract credentials from a VIMInstance.
 package creds
 
 import (
