@@ -18,9 +18,16 @@ var (
 )
 
 const (
+	// DefaultTimeout is the default timeout for RPC requests.
 	DefaultTimeout = vnfmAMQP.DefaultTimeout
+
+	// MgmtExchange is the default exchange to be used.
 	MgmtExchange   = vnfmAMQP.ExchangeDefault
 )
+
+// Due to a bug with json.RawMessage, Go versions before 1.8 do not show the correct behaviour 
+// while serializing/deserializing this structure.
+// Please use Go version 1.8 or higher.
 
 type request struct {
 	Func   string
@@ -32,6 +39,7 @@ type response struct {
 	Error string          `json:",omitempty"`
 }
 
+// makeID returns the ID to be used as the queue name for a given VIM instance.
 func makeID(vimname string) string {
 	return fmt.Sprintf("vim-mgmt-%s", vimname)
 }

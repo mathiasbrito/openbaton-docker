@@ -11,13 +11,18 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// VNFMChannelAccessor is a function type that allows to access a channel.Channel instance.
 type VNFMChannelAccessor func() (channel.Channel, error)
 
+// VIMConnector is a client for a remote VIM instance.
+// Its methods mirror those of Handler; invoking one of them
+// actually invokes the method on the remote handler.
 type VIMConnector interface {
 	Check(id string) (*catalogue.Server, error)
 	Start(id string) error
 }
 
+// NewConnector creates a new Connector to the Manager for the given VIM instance.
 func NewConnector(vimname string, acc VNFMChannelAccessor) VIMConnector {
 	return conn{
 		acc: acc,
@@ -25,6 +30,7 @@ func NewConnector(vimname string, acc VNFMChannelAccessor) VIMConnector {
 	}
 }
 
+// concrete conn type.
 type conn struct {
 	acc VNFMChannelAccessor
 	id  string
@@ -61,6 +67,7 @@ func (c conn) Start(id string) error {
 	return nil
 }
 
+// exchange does an RPC call to the Manager.
 func (c conn) exchange(req []byte) ([]byte, error) {
 	cln, err := c.acc()
 	if err != nil {
@@ -148,6 +155,7 @@ DeliveryLoop:
 	return nil, errors.New("no reply received")
 }
 
+// request marshals the request, does the RPC call and unmarshals the response.
 func (c conn) request(fn string, params interface{}) (response, error) {
 	sparams, err := json.Marshal(params)
 	if err != nil {

@@ -8,12 +8,17 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// AMQPChannelAccessor is a function type that represents a function that allows to access
+// an instance of an *amqp.Channel.
 type AMQPChannelAccessor func() (*amqp.Channel, error)
 
+// VIMManager represents a management instance.
+// A VIMManager is associated with a VIM instance, and runs in the background until its Stop() method is called.
 type VIMManager interface {
 	Stop()
 }
 
+// NewManager starts a new VIMManager for the specified VIM Instance.
 func NewManager(
 	vimname string,
 	h Handler,
@@ -38,6 +43,7 @@ func NewManager(
 	return m
 }
 
+// concrete manager type
 type manager struct {
 	accessor AMQPChannelAccessor
 	l        *log.Logger
@@ -65,6 +71,7 @@ ServeLoop:
 			continue ServeLoop
 		}
 
+		// use the received channel+delivery chan until either it is still valid or the manager is shut down.
 		for {
 			select {
 			case <-m.quitChan:
@@ -87,6 +94,7 @@ ServeLoop:
 	}
 }
 
+// setup initialises the receiving consumer for incoming requests, returning a delivery channel.
 func (m *manager) setup() (cnl *amqp.Channel, deliveries <-chan amqp.Delivery, err error) {
 	tag := util.FuncName()
 

@@ -11,16 +11,29 @@ import (
 )
 
 var (
+	// ErrInternal represents an internal failure.
 	ErrInternal        = errors.New("interal error")
+
+	// ErrTooFewParams is returned when a request has too few parameters for the 
+	// requested function.
 	ErrTooFewParams    = errors.New("not enough parameters for function")
+
+	// ErrMalformedParams generically notifies the caller of malformed parameters.
 	ErrMalformedParams = errors.New("malformed parameters")
 )
 
+// Handler is an interface that represents the concrete functions to be remotely 
+// invoked. The Manager primary task is to deliver requests to the Handler and send its 
+// responses to the caller.
 type Handler interface {
+	// Check checks if a Server with the given ID is up in the VIM.
 	Check(id string) (*catalogue.Server, error)
+
+	// Start starts an already created Server with the given ID.
 	Start(id string) error
 }
 
+// doRequest dispatches a request to the Handler.
 func (m *manager) doRequest(req request) response {
 	var val interface{}
 	var err error
@@ -47,6 +60,7 @@ func (m *manager) doRequest(req request) response {
 	return response{Value: valB, Error: errStr}
 }
 
+// handle handles a delivery, by unmarshling the request and  dispatching it to the handler.
 func (m *manager) handle(cnl *amqp.Channel, delivery amqp.Delivery) {
 	tag := util.FuncName()
 
