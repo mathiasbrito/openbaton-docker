@@ -4,16 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/go-openbaton/catalogue/messages"
 	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/go-openbaton/vnfm/channel"
+	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
-    log "github.com/sirupsen/logrus"
-	"github.com/mcilloni/go-openbaton/catalogue"
 )
 
 func init() {
-    log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.DebugLevel)
 }
 
 func dialAMQP() (*amqp.Channel, error) {
@@ -116,7 +116,7 @@ func TestAll(t *testing.T) {
 	m := NewManager(testID, handler(r), dialAMQP, nil)
 	c := NewConnector(testID, chanChan)
 
-    time.Sleep(time.Second)
+	time.Sleep(time.Second)
 
 	sentID := "33"
 	srv, err := c.Check(sentID)

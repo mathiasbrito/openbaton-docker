@@ -5,13 +5,13 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/streadway/amqp"
-	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/go-openbaton/catalogue"
+	"github.com/mcilloni/go-openbaton/util"
+	"github.com/streadway/amqp"
 )
 
 var (
-	ErrInternal = errors.New("interal error")
+	ErrInternal        = errors.New("interal error")
 	ErrTooFewParams    = errors.New("not enough parameters for function")
 	ErrMalformedParams = errors.New("malformed parameters")
 )
@@ -24,7 +24,7 @@ type Handler interface {
 func (m *manager) doRequest(req request) response {
 	var val interface{}
 	var err error
-	
+
 	switch strings.ToLower(req.Func) {
 	case fnCheck:
 		val, err = m.handleCheck(req.Params)

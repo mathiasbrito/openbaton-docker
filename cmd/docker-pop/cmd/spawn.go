@@ -46,4 +46,3 @@ func init() {
 	// spawnCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
-

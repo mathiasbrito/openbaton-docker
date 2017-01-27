@@ -1,11 +1,11 @@
 package client
 
 import (
-    "context"
-    "errors"
+	"context"
+	"errors"
 
-    pop "github.com/mcilloni/openbaton-docker/pop/proto"
-    "github.com/mcilloni/go-openbaton/catalogue"
+	"github.com/mcilloni/go-openbaton/catalogue"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 // Create creates a new server on the remote Pop. An entry in "ips" with an entry IP will randomly assign an IP from the given network.
@@ -16,20 +16,20 @@ func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, i
 	if ips != nil {
 		endpoints = make(map[string]*pop.Endpoint)
 		for net, ip := range ips {
-			endpoints[net] = &pop.Endpoint {
+			endpoints[net] = &pop.Endpoint{
 				Ipv4: &pop.Ip{Address: ip},
 			}
 		}
 	}
 
-    cfg := &pop.ContainerConfig{
-        Name: name,
-        ImageId: imageID,
-        FlavourId: flavorID,
-        Endpoints: endpoints,
-    }
+	cfg := &pop.ContainerConfig{
+		Name:      name,
+		ImageId:   imageID,
+		FlavourId: flavorID,
+		Endpoints: endpoints,
+	}
 
-    op := func(stub pop.PopClient) (err error) {
+	op := func(stub pop.PopClient) (err error) {
 		cont, err = stub.Create(ctx, cfg)
 		if err != nil {
 			return
@@ -37,7 +37,7 @@ func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, i
 
 		if cont == nil {
 			return errors.New("no container has been created")
-		} 
+		}
 
 		return
 	}
@@ -51,8 +51,8 @@ func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, i
 
 // Delete stops and deletes the container identified by the given filter.
 func (cln *Client) Delete(ctx context.Context, id string) error {
-    op := func(stub pop.PopClient) (err error) {
-        _, err = stub.Delete(ctx, &pop.Filter{Id: id})
+	op := func(stub pop.PopClient) (err error) {
+		_, err = stub.Delete(ctx, &pop.Filter{Id: id})
 		if err != nil {
 			return
 		}
@@ -79,17 +79,17 @@ func (cln *Client) Spawn(ctx context.Context, name, imageID, flavorID string, ip
 
 // Start starts a Server created by Create().
 func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, error) {
-    var cont *pop.Container
-    
-    op := func(stub pop.PopClient) (err error) {
-        cont, err = stub.Start(ctx, &pop.Filter{Id: id})
+	var cont *pop.Container
+
+	op := func(stub pop.PopClient) (err error) {
+		cont, err = stub.Start(ctx, &pop.Filter{Id: id})
 		if err != nil {
 			return
 		}
 
 		if cont == nil {
 			return errors.New("no container has been started")
-		} 
+		}
 
 		return
 	}

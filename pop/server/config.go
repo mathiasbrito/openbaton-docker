@@ -9,17 +9,17 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/BurntSushi/toml" // because it implements TOML Marshalling
-	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/docker/docker/client"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 // DefaultConfig is a sane template config for a local server.
 var (
 	DefaultConfig = Config{
-		PopName: "docker-popd",
-		Proto: pop.DefaultListenProtocol,
-		Netaddr: pop.DefaultListenAddress,
-		Users: Users{},
+		PopName:     "docker-popd",
+		Proto:       pop.DefaultListenProtocol,
+		Netaddr:     pop.DefaultListenAddress,
+		Users:       Users{},
 		DockerdHost: client.DefaultDockerHost,
 	}
 
@@ -36,15 +36,15 @@ type Config struct {
 	// Add TLS here
 }
 
-// LoadConfig either reads a config file through viper, or 
+// LoadConfig either reads a config file through viper, or
 // it initialialises a new config bases on the DefaultConfig template, using the POPD_AUTH config variable
 // to fill the authentication data.
-// If neither of these options suits you, just fill a Config structure by yourself and create a Server instance using it. 
+// If neither of these options suits you, just fill a Config structure by yourself and create a Server instance using it.
 func LoadConfig() (cfg Config, err error) {
 	if viper.ConfigFileUsed() != "" {
 		err = viper.Unmarshal(&cfg)
 		return
-	} 
+	}
 
 	authData := os.Getenv("POPD_AUTH")
 	if authData == "" {
@@ -60,7 +60,7 @@ func LoadConfig() (cfg Config, err error) {
 	}
 
 	users := Users{}
-	
+
 	for _, cred := range creds {
 		splitCred := strings.Split(cred, ":")
 		if len(splitCred) != 2 {

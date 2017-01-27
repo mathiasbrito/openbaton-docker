@@ -5,10 +5,10 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/mcilloni/openbaton-docker/pop/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	log "github.com/sirupsen/logrus"
-	"github.com/mcilloni/openbaton-docker/pop/server"
 )
 
 var cfgFile string
@@ -17,7 +17,7 @@ var cfgFile string
 var RootCmd = &cobra.Command{
 	Use:   "docker-popd",
 	Short: "docker-popd server",
-	Long: `docker-popd is a service that allows OpenBaton to orchestrate and deploy NFV on Docker containers.`,
+	Long:  `docker-popd is a service that allows OpenBaton to orchestrate and deploy NFV on Docker containers.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := loadConfig(); err != nil {
@@ -79,10 +79,10 @@ func loadConfig() error {
 	if err != nil {
 		return err
 	}
-	
+
 	viper.AddConfigPath(wd)
 	viper.SetConfigFile(cfgFile)
-	viper.AutomaticEnv()          // read in environment variables that match
+	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {

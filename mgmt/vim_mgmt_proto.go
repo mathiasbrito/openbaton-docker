@@ -19,7 +19,7 @@ var (
 
 const (
 	DefaultTimeout = vnfmAMQP.DefaultTimeout
-	MgmtExchange = vnfmAMQP.ExchangeDefault
+	MgmtExchange   = vnfmAMQP.ExchangeDefault
 )
 
 type request struct {
@@ -29,7 +29,7 @@ type request struct {
 
 type response struct {
 	Value json.RawMessage `json:",omitempty"`
-	Error string      `json:",omitempty"`
+	Error string          `json:",omitempty"`
 }
 
 func makeID(vimname string) string {

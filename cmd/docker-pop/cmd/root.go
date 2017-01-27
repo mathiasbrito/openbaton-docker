@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/ghodss/yaml"
 	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
-	"github.com/ghodss/yaml"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -26,9 +26,9 @@ var (
 By default the server "%s" is used.
 The client must authenticate with the server either via parameters specified through a POP_AUTH variable in the form
 "username:password" or using the flags described below.`, DefaultServer),
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+		// Uncomment the following line if your bare application
+		// has an action associated with it:
+		//	Run: func(cmd *cobra.Command, args []string) { },
 	}
 )
 
@@ -82,8 +82,8 @@ func credentials() creds.Credentials {
 	host := viper.GetString("host")
 
 	return creds.Credentials{
-		Host: host, 
-		Username: user, 
+		Host:     host,
+		Username: user,
 		Password: pass,
 	}
 }

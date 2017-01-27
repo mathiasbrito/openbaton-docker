@@ -31,7 +31,7 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 }
 
 var (
-	dockerFlavour = &pop.Flavour {
+	dockerFlavour = &pop.Flavour{
 		Id:   "docker-flavour-id",
 		Name: "docker.container",
 	}
@@ -104,7 +104,7 @@ func (svc *service) getContainerInfos(ctx context.Context) (*pop.ContainerList, 
 			Status:         dcont.State,
 			ExtendedStatus: dcont.Status, // The Docker API is not very clear about this
 			ImageId:        dcont.ImageID,
-			FlavourId:		dockerFlavour.Id,
+			FlavourId:      dockerFlavour.Id,
 			Created:        dcont.Created,
 			Command:        dcont.Command,
 			Endpoints:      extractEndpoints(dcont.NetworkSettings.Networks),
@@ -182,7 +182,7 @@ func (svc *service) getSingleContainerInfo(ctx context.Context, id string) (*pop
 		Status:         dcont.State.Status,
 		ExtendedStatus: dcont.State.Error,
 		ImageId:        dcont.Image,
-		FlavourId:		dockerFlavour.Id,
+		FlavourId:      dockerFlavour.Id,
 		Created:        created.Unix(),
 		Command:        b.String(),
 		Endpoints:      extractEndpoints(dcont.NetworkSettings.Networks),

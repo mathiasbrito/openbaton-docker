@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"sync"
-	
+
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 )
 
@@ -26,7 +26,7 @@ type sessionCache struct {
 }
 
 // get() retrieves or creates a session for the given credentials.
-// It requires a mutex to avoid multiple parallel get() requests. 
+// It requires a mutex to avoid multiple parallel get() requests.
 func (sc *sessionCache) get(c creds.Credentials) (*session, error) {
 	sc.lock.Lock()
 	defer sc.lock.Unlock()

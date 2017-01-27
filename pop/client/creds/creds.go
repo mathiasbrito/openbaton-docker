@@ -3,10 +3,10 @@
 package creds
 
 import (
-    "net/url"
+	"net/url"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
-    pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 // Credentials to connect and authenticate with a Pop server.

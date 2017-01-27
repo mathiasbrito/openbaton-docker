@@ -10,7 +10,7 @@ import (
 var imagesCmd = &cobra.Command{
 	Use:   "images",
 	Short: "Prints images",
-	Long: `Prints a list of all the images available on the server.`,
+	Long:  `Prints a list of all the images available on the server.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		results(cl().Images(context.Background()))
 	},

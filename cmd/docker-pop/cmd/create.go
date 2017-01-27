@@ -65,7 +65,7 @@ func parseArgs(args []string) map[string]string {
 
 		case "name":
 			name = splitted[1]
-		
+
 		default:
 			failf("unknown argument %s", splitted[0])
 		}
@@ -76,8 +76,8 @@ func parseArgs(args []string) map[string]string {
 	}
 
 	return map[string]string{
-		"name": name,
-		"image": image,
+		"name":    name,
+		"image":   image,
 		"flavour": flavour,
 	}
 }

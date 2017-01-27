@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
+	"github.com/mcilloni/openbaton-docker/mgmt"
 	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
-	"github.com/mcilloni/openbaton-docker/pop/mgmt"
 )
 
 var (

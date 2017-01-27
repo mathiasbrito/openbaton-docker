@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
+	"github.com/mcilloni/openbaton-docker/mgmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/mcilloni/openbaton-docker/pop/mgmt"
 )
 
 type handl struct {
@@ -57,7 +57,7 @@ func (h *handl) Heal(vnfr *catalogue.VirtualNetworkFunctionRecord,
 func (h *handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, scripts interface{},
 	vimInstances map[string][]*catalogue.VIMInstance) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":  "docker-vnfm-handl-instantiate",
+		"tag":       "docker-vnfm-handl-instantiate",
 		"vnfr-name": vnfr.Name,
 	}).Info("instantiating VNFR")
 
@@ -73,7 +73,7 @@ func (h *handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, script
 			}
 
 			h.WithFields(log.Fields{
-				"tag":  "docker-vnfm-handl-instantiate",
+				"tag":      "docker-vnfm-handl-instantiate",
 				"srv-name": srv.Name,
 			}).Debug("server is alive")
 		}
@@ -159,7 +159,7 @@ func (h *handl) Start(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalogue.
 			}
 		}
 	}
-	
+
 	return vnfr, nil
 }
 
@@ -170,7 +170,7 @@ func (h *handl) StartVNFCInstance(vnfr *catalogue.VirtualNetworkFunctionRecord,
 		"tag":                "docker-vnfm-handl-start_vnfc_instance",
 		"vnfc_instance-name": vnfcInstance.Hostname,
 		"vnfc_instance-id":   vnfcInstance.ID,
-		"vim_instance-id": vnfcInstance.VIMID,
+		"vim_instance-id":    vnfcInstance.VIMID,
 	}).Info("starting VNFCInstance")
 
 	if err := h.mgmt(vnfcInstance.VIMID).Start(vnfcInstance.Hostname); err != nil {
@@ -187,7 +187,6 @@ func (h *handl) Stop(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalogue.V
 		"vnfr-name": vnfr.Name,
 	}).Info("stopping VNFR")
 
-	
 	return vnfr, nil
 }
 

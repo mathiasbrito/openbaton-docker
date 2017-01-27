@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mcilloni/go-openbaton/vnfm/channel"
 	"github.com/mcilloni/go-openbaton/catalogue"
-	"github.com/streadway/amqp"
 	"github.com/mcilloni/go-openbaton/util"
+	"github.com/mcilloni/go-openbaton/vnfm/channel"
+	"github.com/streadway/amqp"
 )
 
 type VNFMChannelAccessor func() (channel.Channel, error)
@@ -45,7 +45,7 @@ func (c conn) Check(id string) (*catalogue.Server, error) {
 		return nil, err
 	}
 
-	return srv, nil	
+	return srv, nil
 }
 
 func (c conn) Start(id string) error {
@@ -77,7 +77,7 @@ func (c conn) exchange(req []byte) ([]byte, error) {
 		return nil, errors.New("invalid channel - only AMQP is supported")
 	}
 
-	// check if the wanted queue exists. 
+	// check if the wanted queue exists.
 	if _, err := acnl.QueueInspect(c.id); err != nil {
 		return nil, err
 	}

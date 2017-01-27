@@ -324,7 +324,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 		Status:         cont.Status,
 		ExtendedStatus: cont.ExtendedStatus,
 		Image:          nfvImage,
-		Flavour:		deploymentFlavour,
+		Flavour:        deploymentFlavour,
 		IPs:            ipMap,
 		FloatingIPs:    map[string]string{},
 	}, nil

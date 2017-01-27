@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
+	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
 var (
@@ -112,7 +112,7 @@ func (sess *session) logout() error {
 	return nil
 }
 
-// stub uses the underlying connection to create a new stub. 
+// stub uses the underlying connection to create a new stub.
 func (sess *session) stub() pop.PopClient {
 	return pop.NewPopClient(sess.conn)
 }

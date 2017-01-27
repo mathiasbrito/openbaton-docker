@@ -6,11 +6,11 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/go-openbaton/vnfm"
 	_ "github.com/mcilloni/go-openbaton/vnfm/amqp" // import needed to load the driver
 	"github.com/mcilloni/go-openbaton/vnfm/config"
 	log "github.com/sirupsen/logrus"
-	"github.com/mcilloni/go-openbaton/util"
 )
 
 var confPath = flag.String("cfg", "config.toml", "a TOML file to be loaded as config")
@@ -46,7 +46,7 @@ func main() {
 
 	go func() {
 		tag := util.FuncName()
-		
+
 		<-sigChan
 
 		l.WithFields(log.Fields{

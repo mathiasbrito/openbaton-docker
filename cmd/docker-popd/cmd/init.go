@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/spf13/cobra"
 	"github.com/mcilloni/openbaton-docker/pop/server"
+	"github.com/spf13/cobra"
 )
 
 // initCmd represents the init command
@@ -21,7 +21,7 @@ var initCmd = &cobra.Command{
 	You will be asked for an username and a password.
 	
 	Any existing config file will be overwritten.`,
-	
+
 	Run: func(cmd *cobra.Command, args []string) {
 		reader := bufio.NewReader(os.Stdin)
 
@@ -34,7 +34,7 @@ var initCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "cannot read password: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		password := string(bytePassword)
 
 		username = strings.TrimSpace(username)

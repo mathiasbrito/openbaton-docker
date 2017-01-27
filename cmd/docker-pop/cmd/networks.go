@@ -10,7 +10,7 @@ import (
 var networksCmd = &cobra.Command{
 	Use:   "networks",
 	Short: "Prints networks",
-	Long: `Prints a list of all the networks available on the server.`,
+	Long:  `Prints a list of all the networks available on the server.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		results(cl().Networks(context.Background()))
 	},

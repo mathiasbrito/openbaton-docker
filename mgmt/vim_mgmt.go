@@ -3,9 +3,9 @@ package mgmt
 import (
 	"time"
 
-	"github.com/streadway/amqp"
-	log "github.com/sirupsen/logrus"
 	"github.com/mcilloni/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 type AMQPChannelAccessor func() (*amqp.Channel, error)
@@ -27,7 +27,7 @@ func NewManager(
 
 	m := &manager{
 		accessor: accessor,
-		l:      l,
+		l:        l,
 		handl:    h,
 		id:       makeID(vimname),
 		quitChan: make(chan struct{}),
@@ -40,7 +40,7 @@ func NewManager(
 
 type manager struct {
 	accessor AMQPChannelAccessor
-	l      *log.Logger
+	l        *log.Logger
 	handl    Handler
 	id       string
 	quitChan chan struct{}
@@ -77,7 +77,7 @@ ServeLoop:
 				}
 
 				m.l.WithFields(log.Fields{
-					"tag": tag,
+					"tag":     tag,
 					"corr-id": delivery.CorrelationId,
 				}).Debug("new delivery")
 
@@ -100,7 +100,7 @@ func (m *manager) setup() (cnl *amqp.Channel, deliveries <-chan amqp.Delivery, e
 	_, err = cnl.QueueDeclare(
 		m.id,  // name
 		false, // durable
-		true, // delete when usused
+		true,  // delete when usused
 		false, // exclusive
 		false, // no-wait
 		nil,   // arguments

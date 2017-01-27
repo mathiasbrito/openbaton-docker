@@ -6,8 +6,8 @@ import (
 
 	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/go-openbaton/util"
+	"github.com/mcilloni/openbaton-docker/mgmt"
 	"github.com/mcilloni/openbaton-docker/pop/client"
-	"github.com/mcilloni/openbaton-docker/pop/mgmt"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,8 +15,8 @@ import (
 type driver struct {
 	*log.Logger
 	Accessor mgmt.AMQPChannelAccessor
-	
-	managers map[string]mgmt.VIMManager	
+
+	managers map[string]mgmt.VIMManager
 }
 
 func newDriver() *driver {
@@ -117,7 +117,7 @@ func (d *driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id 
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
-		"tag": tag,
+		"tag":       tag,
 		"server-id": id,
 	}).Debug("received request")
 
@@ -177,19 +177,19 @@ func (d *driver) LaunchInstanceAndWaitWithIPs(
 	tag := util.FuncName()
 
 	d.WithFields(log.Fields{
-		"tag": tag,
+		"tag":      tag,
 		"hostname": hostname,
-		"image": image,
-		"flavour": flavour,
+		"image":    image,
+		"flavour":  flavour,
 	}).Debug("received request")
 
 	_, err := d.SetupManagement(vimInstance)
 	if err != nil {
 		d.WithError(err).WithFields(log.Fields{
-			"tag": tag,
+			"tag":      tag,
 			"hostname": hostname,
-			"image": image,
-			"flavour": flavour,
+			"image":    image,
+			"flavour":  flavour,
 		}).Error("management failed")
 
 		return nil, errors.New("VIM Management refused to start. See the plugin log")

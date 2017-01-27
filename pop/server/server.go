@@ -10,7 +10,7 @@ import (
 
 // Server represents the PoP service.
 type Server struct {
-	Config Config
+	Config   Config
 	Listener net.Listener
 }
 
