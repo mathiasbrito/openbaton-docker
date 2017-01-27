@@ -14,6 +14,7 @@ import (
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
+// Container fetches created or running containers from Docker, applying the given filter.
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
 	// filter for a container with the given ID
 	if filter.Id != "" {
@@ -30,6 +31,7 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 	return svc.getContainerInfos(ctx)
 }
 
+// dummy flavours
 var (
 	dockerFlavour = &pop.Flavour{
 		Id:   "docker-flavour-id",
@@ -57,6 +59,7 @@ func (*service) Flavours(ctx context.Context, filter *pop.Filter) (*pop.FlavourL
 	return flavours, nil
 }
 
+// Images retrieves and returns the available images on the Docker daemon.
 func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageList, error) {
 	// filter for an image with the given ID
 	if filter.Id != "" {
@@ -73,6 +76,7 @@ func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageL
 	return svc.getImageInfos(ctx)
 }
 
+// Networks retrieves the current daemon networks.
 func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.NetworkList, error) {
 	// filter for a network with the given ID
 	if filter.Id != "" {

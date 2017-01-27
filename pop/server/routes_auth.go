@@ -16,11 +16,13 @@ import (
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
+// sessionManager saves all the generated tokens.
 type sessionManager struct {
 	l  sync.RWMutex
 	tk map[string]struct{}
 }
 
+// CheckToken tries to check if the given token is valid.
 func (sm *sessionManager) CheckToken(tok string) bool {
 	sm.l.RLock()
 	defer sm.l.RUnlock()
@@ -29,10 +31,13 @@ func (sm *sessionManager) CheckToken(tok string) bool {
 	return ok
 }
 
+// DeleteToken deletes a token.
 func (sm *sessionManager) DeleteToken(tok string) {
 	delete(sm.tk, tok)
 }
 
+// NewToken reads a TokenBytes long message from a secure RNG, and 
+// returns it as a base64 token.
 func (sm *sessionManager) NewToken() (string, error) {
 	b := make([]byte, TokenBytes)
 	if _, err := rand.Read(b); err != nil {
@@ -70,6 +75,7 @@ func (svc *service) Login(ctx context.Context, creds *pop.Credentials) (*pop.Tok
 	return nil, pop.AuthErr
 }
 
+// Logout deletes the current session token from the sessionManager.
 func (svc *service) Logout(ctx context.Context, in *empty.Empty) (*empty.Empty, error) {
 	// getToken() will always return a valid token (it has been checked in unaryInterceptor()).
 
@@ -80,6 +86,7 @@ func (svc *service) Logout(ctx context.Context, in *empty.Empty) (*empty.Empty, 
 	return &empty.Empty{}, nil
 }
 
+// authorize checks if the current context is autheticated (ie, if it contains a valid token).
 func (svc *service) authorize(ctx context.Context) error {
 	tokens := getTokens(ctx)
 
@@ -96,6 +103,7 @@ func (svc *service) authorize(ctx context.Context) error {
 	return pop.InvalidTokenErr
 }
 
+// streamInterceptor is an interceptor for stream requests.
 func (svc *service) streamInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	if err := svc.authorize(stream.Context()); err != nil {
 		return err
@@ -104,6 +112,7 @@ func (svc *service) streamInterceptor(srv interface{}, stream grpc.ServerStream,
 	return handler(srv, stream)
 }
 
+// unaryInterceptor intercepts every unary request, and ensures that the caller is authorized before doing anything.
 func (svc *service) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	// Let the Login method AND ONLY IT pass through without a valid token (for obvious reasons)
 	if info.FullMethod != loginMethod {
@@ -115,6 +124,7 @@ func (svc *service) unaryInterceptor(ctx context.Context, req interface{}, info 
 	return handler(ctx, req)
 }
 
+// getToken retrieves the tokens from the current context metadata.
 func getTokens(ctx context.Context) []string {
 	md, ok := metadata.FromContext(ctx)
 	if !ok {
