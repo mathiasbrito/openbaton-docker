@@ -1,6 +1,8 @@
 openbaton-docker 
 ================
 
+[![GoDoc](https://godoc.org/github.com/mcilloni/openbaton-docker?status.svg)](https://godoc.org/github.com/mcilloni/openbaton-docker)
+
 This repository hosts several packages and services to enable the [OpenBaton][openbaton] [NFVO][nfvo] to use and orchestrate [Docker containers][docker]. 
 
 ## Packages
