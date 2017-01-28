@@ -323,32 +323,7 @@ func (d *driver) UpdateSubnet(vimInstance *catalogue.VIMInstance, createdNetwork
 	return subnet, nil
 }
 
-func newServer() *catalogue.Server {
-	return &catalogue.Server{
-		Name:           "server_name",
-		ExtID:          "ext_id",
-		Created:        catalogue.NewDate(),
-		FloatingIPs:    make(map[string]string),
-		ExtendedStatus: "ACTIVE",
-		Flavour: &catalogue.DeploymentFlavour{
-			Disk:       100,
-			ExtID:      "ext",
-			FlavourKey: "m1.small",
-			RAM:        2000,
-			VCPUs:      4,
-		},
-		IPs: make(map[string][]string),
-	}
-}
-
-func newNetwork(id string) *catalogue.Network {
-	return &catalogue.Network{
-		Name:  "network_name",
-		ID:    id,
-		ExtID: "ext_id",
-	}
-}
-
+// newQuota returns a totally fake quota.
 func newQuota() *catalogue.Quota {
 	return &catalogue.Quota{
 		Cores:       99999,

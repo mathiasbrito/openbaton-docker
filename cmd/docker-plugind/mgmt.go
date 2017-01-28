@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	// ErrMgmtUnavailable indicates that the plugin has been unable to spawn management for the given VIM instance.
 	ErrMgmtUnavailable = errors.New("management is unavailable for this instance")
 )
 
@@ -42,14 +43,17 @@ type handler struct {
 	cln client.Client
 }
 
+// newHandler created an handler with its Credentials stored in a client.Client instance.
 func newHandler(c creds.Credentials) handler {
 	return handler{client.Client{Credentials: c}}
 }
 
+// Check checks on the pop if the Server with the given ID exists. 
 func (h handler) Check(id string) (*catalogue.Server, error) {
 	return h.cln.Server(context.Background(), id)
 }
 
+// Start starts the given server.
 func (h handler) Start(id string) error {
 	_, err := h.cln.Start(context.Background(), id)
 
