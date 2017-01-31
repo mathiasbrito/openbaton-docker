@@ -79,7 +79,7 @@ func (sess *session) interceptor(ctx context.Context, method string, req, reply 
 	}
 
 	// if we are not logging in, inject the token metadata in the context
-	if method != "/pop.Pop/Login" {
+	if method != pop.LoginMethod {
 		ctx = sess.ctx(ctx)
 	}
 

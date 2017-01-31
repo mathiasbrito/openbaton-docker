@@ -16,10 +16,6 @@ import (
 const (
 	// TokenBytes specifies how long a token is.
 	TokenBytes = 32
-
-	// loginMethod is the signature of the login method. Check this string 
-	// carefully.
-	loginMethod = "/pop.Pop/Login"
 )
 
 // concrete service 

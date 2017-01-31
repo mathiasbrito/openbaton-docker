@@ -56,14 +56,14 @@ func init() {
 func TestCreateDelete(tst *testing.T) {
 	srv, err := cln.Spawn(context.Background(), "tst-cont", "nginx:latest", "", nil)
 	if err != nil {
-		tst.Error(err)
+		tst.Fatal(err)
 	}
 
 	tst.Logf("spawned server: %s", srv.ExtID)
 
 	srvs, err := cln.Servers(context.Background())
 	if err != nil {
-		tst.Error(err)
+		tst.Fatal(err)
 	}
 
 	found := false
@@ -77,23 +77,23 @@ func TestCreateDelete(tst *testing.T) {
 	}
 
 	if !found {
-		tst.Error("spawned server not found")
+		tst.Fatal("spawned server not found")
 	}
 
 	if err := cln.Delete(context.Background(), srv.ExtID); err != nil {
-		tst.Error(err)
+		tst.Fatal(err)
 	}
 
 	tst.Logf("deleted server: %s", srv.ExtID)
 
 	srvs, err = cln.Servers(context.Background())
 	if err != nil {
-		tst.Error(err)
+		tst.Fatal(err)
 	}
 
 	for _, ss := range srvs {
 		if ss.ExtID == srv.ExtID {
-			tst.Errorf("deleted server %s is still present", ss.ExtID)
+			tst.Fatalf("deleted server %s is still present", ss.ExtID)
 		}
 	}
 

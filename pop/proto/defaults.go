@@ -9,4 +9,8 @@ const (
 
 	// DefaultListenAddress is the default address the server uses for Listen.
 	DefaultListenAddress = ":60000"
+
+	// LoginMethod is the signature of the login method. Check this string 
+	// carefully.
+	LoginMethod = "/vim_pop.Pop/Login"
 )

@@ -115,7 +115,7 @@ func (svc *service) streamInterceptor(srv interface{}, stream grpc.ServerStream,
 // unaryInterceptor intercepts every unary request, and ensures that the caller is authorized before doing anything.
 func (svc *service) unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	// Let the Login method AND ONLY IT pass through without a valid token (for obvious reasons)
-	if info.FullMethod != loginMethod {
+	if info.FullMethod != pop.LoginMethod {
 		if err := svc.authorize(ctx); err != nil {
 			return nil, err
 		}
