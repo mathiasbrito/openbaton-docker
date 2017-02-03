@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -22,7 +23,7 @@ const (
 type metadata map[string]string
 
 // Merge merges metadata maps together.
-// New values will overwrite old ones, and empty values 
+// New values will overwrite old ones, and empty values
 // will delete the key from the map.
 func (md metadata) Merge(newMD metadata) {
 	for key, val := range newMD {
@@ -47,23 +48,24 @@ func (md metadata) Strings() []string {
 // svcCont represent a link between a Pop Container
 // and a Docker container.
 type svcCont struct {
-    *pop.Container
-    DockerID string
+	*pop.Container
+	DockerID string
 
 	metadata
 
-	// the container should be launched only once.
-	launch sync.Once
+	// the container should pass through his events only once.
+	mux sync.Mutex
 }
 
-// concrete service 
+// concrete service
 type service struct {
 	sessionManager
-	users Users
-	name  string
-	cln   *client.Client
-	conts map[string]*svcCont
-    contsMux sync.RWMutex
+	users    Users
+	name     string
+	cln      *client.Client
+	conts    map[string]*svcCont
+	contsMux sync.RWMutex
+	quitChan chan struct{}
 }
 
 func newService(cfg Config) (*service, error) {
@@ -78,13 +80,17 @@ func newService(cfg Config) (*service, error) {
 		sessionManager: sessionManager{
 			tk: make(map[string]struct{}),
 		},
-		users: cfg.Users,
-		conts: make(map[string]*svcCont),
+		users:    cfg.Users,
+		conts:    make(map[string]*svcCont),
+		quitChan: make(chan struct{}),
 	}
 
 	if err := srv.checkDocker(); err != nil {
 		return nil, fmt.Errorf("docker connection is broken: %v", err)
 	}
+
+	// spawn the monitoring loop
+	go srv.refreshLoop()
 
 	return srv, nil
 }
@@ -100,6 +106,18 @@ func (svc *service) Info(context.Context, *empty.Empty) (*pop.Infos, error) {
 func (svc *service) checkDocker() (err error) {
 	_, err = svc.cln.Ping(context.Background())
 	return
+}
+
+func (svc *service) close() error {
+	svc.quitChan <- struct{}{}
+
+	select {
+	case <-svc.quitChan:
+		return nil
+
+	case <-time.After(5 * time.Second):
+		return errors.New("timed out while closing the Docker monitor routine")
+	}
 }
 
 func dialDocker(cfg Config) (*client.Client, error) {

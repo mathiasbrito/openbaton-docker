@@ -12,6 +12,8 @@ import (
 type Server struct {
 	Config   Config
 	Listener net.Listener
+
+	svc *service
 }
 
 // New initialises a new Server from viper.
@@ -28,7 +30,19 @@ func New() (*Server, error) {
 
 // Close shuts down the Server.
 func (s *Server) Close() error {
-	return s.Listener.Close()
+	err1 := s.svc.close()
+	err2 := s.Listener.Close()
+
+	switch {
+	case err1 != nil:
+		return err1
+
+	case err2 != nil:
+		return err2
+
+	default:
+		return nil
+	}
 }
 
 // Serve spawns the service.
@@ -52,17 +66,17 @@ func (s *Server) Serve() error {
 
 	s.Listener = lis
 
-	svc, err := newService(s.Config)
+	s.svc, err = newService(s.Config)
 	if err != nil {
 		return err
 	}
 
 	srv := grpc.NewServer(
-		grpc.StreamInterceptor(svc.streamInterceptor),
-		grpc.UnaryInterceptor(svc.unaryInterceptor),
+		grpc.StreamInterceptor(s.svc.streamInterceptor),
+		grpc.UnaryInterceptor(s.svc.unaryInterceptor),
 	)
 
-	pop.RegisterPopServer(srv, svc)
+	pop.RegisterPopServer(srv, s.svc)
 
 	if err := srv.Serve(s.Listener); err != nil {
 		return err

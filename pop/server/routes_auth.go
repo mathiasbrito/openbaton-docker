@@ -36,7 +36,7 @@ func (sm *sessionManager) DeleteToken(tok string) {
 	delete(sm.tk, tok)
 }
 
-// NewToken reads a TokenBytes long message from a secure RNG, and 
+// NewToken reads a TokenBytes long message from a secure RNG, and
 // returns it as a base64 token.
 func (sm *sessionManager) NewToken() (string, error) {
 	b := make([]byte, TokenBytes)

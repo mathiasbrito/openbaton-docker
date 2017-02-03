@@ -38,8 +38,11 @@ service Pop {
   rpc Metadata(NewMetadata) returns (google.protobuf.Empty);
 
   // Start starts the container identified by the given filter.
-  // Any dependency key stored in the server will be passed to the newly instantiated container.
+  // Any metadata key stored in the server will be passed to the newly instantiated container.
   rpc Start(Filter) returns (Container);
+
+  // Stop starts the container identified by the given filter.
+  rpc Stop(Filter) returns (google.protobuf.Empty);
 
   // login/logout functions
 
@@ -71,7 +74,7 @@ message Container {
     CREATED = 1;
     RUNNING = 2;
     EXITED  = 3;
-    DEAD    = 4;
+    FAILED    = 4;
   }
 
   Status status = 7;

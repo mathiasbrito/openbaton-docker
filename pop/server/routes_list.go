@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -95,25 +93,14 @@ func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.Netw
 }
 
 func (svc *service) getContainerInfos(ctx context.Context) (*pop.ContainerList, error) {
-	dockerConts, err := svc.getDockerContainers(ctx)
-	if err != nil {
-		return nil, err
-	}
+	svc.contsMux.RLock()
+	defer svc.contsMux.RUnlock()
 
-	conts := make([]*pop.Container, len(dockerConts))
+	// preallocate the list
+	conts := make([]*pop.Container, 0, len(svc.conts))
 
-	for i, dcont := range dockerConts {
-		conts[i] = &pop.Container{
-			Id:             dcont.ID,
-			Names:          dcont.Names,
-			Status:         matchState(dcont.State),
-			ExtendedStatus: dcont.Status, // The Docker API is not very clear about this
-			ImageId:        dcont.ImageID,
-			FlavourId:      dockerFlavour.Id,
-			Created:        dcont.Created,
-			Command:        dcont.Command,
-			Endpoints:      extractEndpoints(dcont.NetworkSettings.Networks),
-		}
+	for _, cj := range svc.conts {
+		conts = append(conts, cj.Container)
 	}
 
 	return &pop.ContainerList{List: conts}, nil
@@ -164,34 +151,17 @@ func (svc *service) getNetworkInfos(ctx context.Context) (*pop.NetworkList, erro
 }
 
 func (svc *service) getSingleContainerInfo(ctx context.Context, id string) (*pop.Container, error) {
-	dcont, err := svc.cln.ContainerInspect(ctx, id)
-	if err != nil {
-		return nil, err
+	svc.contsMux.RLock()
+	defer svc.contsMux.RUnlock()
+
+	// preallocate the list
+
+	cj, found := svc.conts[id]
+	if !found {
+		return nil, ErrNoSuchContainer
 	}
 
-	// why is Docker API such a mess?
-	created, err := time.Parse(time.RFC3339Nano, dcont.Created)
-	if err != nil {
-		return nil, pop.InternalErr
-	}
-
-	b := bytes.Buffer{}
-	for _, part := range dcont.Config.Cmd {
-		b.WriteString(part)
-		b.WriteRune(' ')
-	}
-
-	return &pop.Container{
-		Id:             dcont.ID,
-		Names:          []string{dcont.Name},
-		Status:         matchState(dcont.State.Status),
-		ExtendedStatus: dcont.State.Error,
-		ImageId:        dcont.Image,
-		FlavourId:      dockerFlavour.Id,
-		Created:        created.Unix(),
-		Command:        b.String(),
-		Endpoints:      extractEndpoints(dcont.NetworkSettings.Networks),
-	}, nil
+	return cj.Container, nil
 }
 
 func (svc *service) getSingleImageInfo(ctx context.Context, id string) (*pop.Image, error) {
@@ -310,23 +280,4 @@ func extractSubnets(dSubnets []network.IPAMConfig) []*pop.Subnet {
 	}
 
 	return subs
-}
-
-func matchState(dockerState string) pop.Container_Status {
-	switch strings.ToLower(dockerState) {
-	case "created":
-		return pop.Container_CREATED
-	
-	case "running":
-		return pop.Container_RUNNING
-
-	case "exited":
-		return pop.Container_EXITED
-
-	case "dead":
-		return pop.Container_DEAD
-
-	default:
-		return pop.Container_UNAVAILABLE
-	}
 }

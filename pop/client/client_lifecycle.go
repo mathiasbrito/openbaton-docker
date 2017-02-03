@@ -13,15 +13,15 @@ import (
 func (cln *Client) AddMetadata(ctx context.Context, id string, keys map[string]string) error {
 	op := func(stub pop.PopClient) (err error) {
 		_, err = stub.Metadata(
-			ctx, 
+			ctx,
 			&pop.NewMetadata{
-				Id: id, 
+				Id: id,
 				Md: &pop.Metadata{
 					Entries: keys,
 				},
 			},
 		)
-		
+
 		if err != nil {
 			return
 		}
@@ -127,4 +127,27 @@ func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, err
 	}
 
 	return cln.makeServer(ctx, cont)
+}
+
+// Stop stops a Server launched by Start or Spawn.
+func (cln *Client) Stop(ctx context.Context, id string) error {
+	var cont *pop.Container
+
+	op := func(stub pop.PopClient) (err error) {
+		if _, err := stub.Stop(ctx, &pop.Filter{Id: id}); err != nil {
+			return err
+		}
+
+		if cont == nil {
+			return errors.New("no container has been stopped")
+		}
+
+		return
+	}
+
+	if err := cln.doRetry(op); err != nil {
+		return err
+	}
+
+	return nil
 }
