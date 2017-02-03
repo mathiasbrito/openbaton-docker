@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mcilloni/go-openbaton/catalogue"
@@ -30,6 +31,31 @@ func (cln *Client) Info(ctx context.Context) (infos *pop.Infos, err error) {
 	err = cln.doRetry(func(stub pop.PopClient) (err error) {
 		infos, err = stub.Info(ctx, &empty.Empty{})
 		return
+	})
+
+	return
+}
+
+// FetchMetadata fetches the metadata for a given server.
+// This function is generally not needed by a normal user of this library.
+func (cln *Client) FetchMetadata(ctx context.Context, id string) (md map[string]string, err error) {
+	err = cln.doRetry(func(stub pop.PopClient) error {
+		conts, err := stub.Containers(ctx, &pop.Filter{Id: id})
+		if err != nil {
+			return err
+		}
+
+		if conts == nil || conts.List == nil || len(conts.List) != 1 {
+			return fmt.Errorf("invalid argument returned from server: %s", conts.String())
+		}
+
+		if protoMd := conts.List[0].Md; protoMd != nil && protoMd.Entries != nil {
+			md = protoMd.Entries
+		} else {
+			md = map[string]string{}
+		}
+		
+		return nil
 	})
 
 	return

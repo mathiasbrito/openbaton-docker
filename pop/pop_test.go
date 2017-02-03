@@ -53,6 +53,63 @@ func init() {
 	}()
 }
 
+func TestAddMetadataDel(tst *testing.T) {
+	srv, err := cln.Create(context.Background(), "tst-cont", "nginx:latest", "", nil)
+	if err != nil {
+		tst.Fatal(err)
+	}
+
+	err = cln.AddMetadata(context.Background(), srv.ExtID, map[string]string {
+		"key" : "value",
+	})
+	
+	if err != nil {
+		tst.Fatal(err)
+	}
+
+	md, err := cln.FetchMetadata(context.Background(), srv.ExtID)
+	if err != nil {
+		tst.Fatal(err)
+	}
+
+	tst.Logf("retrieved metadata for %s: %#v", srv.ExtID, md)
+
+	val, found := md["key"]
+	if !found {
+		tst.Fatal("key not found in metadata")
+	}
+
+	tst.Logf("found key with value %s in metadata", val)
+
+	if val != "value" {
+		tst.Fatalf("metadata failure, %s != value", val)
+	}
+
+	err = cln.AddMetadata(context.Background(), srv.ExtID, map[string]string {
+		"key" : "", // delete key
+	})
+	
+	if err != nil {
+		tst.Fatal(err)
+	}
+
+	md, err = cln.FetchMetadata(context.Background(), srv.ExtID)
+	if err != nil {
+		tst.Fatal(err)
+	}
+
+	tst.Logf("retrieved metadata for %s: %#v", srv.ExtID, md)
+
+	val, found = md["key"]
+	if found {
+		tst.Fatal("key is still in metadata")
+	}
+
+	if err := cln.Delete(context.Background(), srv.ExtID); err != nil {
+		tst.Fatal(err)
+	}
+}
+
 func TestCreateDelete(tst *testing.T) {
 	srv, err := cln.Spawn(context.Background(), "tst-cont", "nginx:latest", "", nil)
 	if err != nil {

@@ -43,15 +43,25 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 		return nil, fmt.Errorf("unsupported flavour %v, only %v is supported", cfg.FlavourId, dockerFlavour.Id)
 	}
 
+	// grab the lock BEFORE creating the descriptor - 
+	// if cfg specifies an already taken name, it's pointless to 
+	// waste time with the daemon. To check this we need the lock to read from names.
+	svc.contsMux.Lock()
+	defer svc.contsMux.Unlock()
+
+	if svc.names.Contains(cfg.Name) {
+		return nil, grpc.Errorf(codes.AlreadyExists, "container name %s already taken", cfg.Name)
+	}
+
 	cont, err := svc.checkConfig(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// after creating a new container descriptor, get the lock, find an id and
+	// after creating a new container descriptor, find an id and
 	// put it into the map.
-	svc.contsMux.Lock()
-	defer svc.contsMux.Unlock()
+
+	// check if the name is al
 
 	for {
 		cont.Id = uuid.NewV4().String()
@@ -65,9 +75,10 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 	svc.conts[cont.Id] = &svcCont{
 		Container: cont,
 		DockerID:  "", // not yet assigned
-
-		metadata: make(metadata),
 	}
+
+	// Names has always at least an element
+	svc.names.Put(cont.Names[0])
 
 	return cont, nil
 }
@@ -97,8 +108,9 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 		}
 	}
 
-	// deletes the container from the container list
+	// deletes the container from the container list and from names
 	delete(svc.conts, filter.Id)
+	svc.names.Delete(pcont.Names[0])
 
 	// if someone still holds a reference to this container
 	pcont.Status = pop.Container_EXITED
@@ -128,7 +140,7 @@ func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empt
 		return nil, ErrInvalidArgument
 	}
 
-	pcont.metadata.Merge(newMD.Md.Entries)
+	pcont.Md().Merge(newMD.Md.Entries)
 
 	return &empty.Empty{}, nil
 }
@@ -247,6 +259,7 @@ func (svc *service) checkConfig(ctx context.Context, cfg *pop.ContainerConfig) (
 		FlavourId:      cfg.FlavourId,
 		Created:        time.Now().Unix(),
 		Endpoints:      cfg.Endpoints,
+		Md:             &pop.Metadata{Entries: make(map[string]string)},
 	}, nil
 }
 
@@ -281,7 +294,7 @@ func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (contai
 			// there is a bug
 			Hostname: pcont.Names[0],
 			Image:    pcont.ImageId,
-			Env:      pcont.metadata.Strings(),
+			Env:      pcont.Md().Strings(),
 		},
 		&container.HostConfig{
 			AutoRemove: true,
