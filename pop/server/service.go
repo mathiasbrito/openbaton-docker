@@ -21,9 +21,16 @@ const (
 
 type metadata map[string]string
 
+// Merge merges metadata maps together.
+// New values will overwrite old ones, and empty values 
+// will delete the key from the map.
 func (md metadata) Merge(newMD metadata) {
 	for key, val := range newMD {
-		md[key] = val
+		if val != "" {
+			md[key] = val
+		} else {
+			delete(md, key)
+		}
 	}
 }
 

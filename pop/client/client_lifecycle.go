@@ -8,6 +8,34 @@ import (
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
+// AddMetadata adds metadata keys to a not yet started container.
+// New keys will match existing ones; any empty value will delete its key from the map server side.
+func (cln *Client) AddMetadata(ctx context.Context, id string, keys map[string]string) error {
+	op := func(stub pop.PopClient) (err error) {
+		_, err = stub.Metadata(
+			ctx, 
+			&pop.NewMetadata{
+				Id: id, 
+				Md: &pop.Metadata{
+					Entries: keys,
+				},
+			},
+		)
+		
+		if err != nil {
+			return
+		}
+
+		return
+	}
+
+	if err := cln.doRetry(op); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Create creates a new server on the remote Pop. An entry in "ips" with an entry IP will randomly assign an IP from the given network.
 func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, ips map[string]string) (*catalogue.Server, error) {
 	var cont *pop.Container
