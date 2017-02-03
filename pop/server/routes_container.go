@@ -85,6 +85,28 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 	return &empty.Empty{}, nil
 }
 
+// Metadata adds the given metadata values to the container that matches with the ID.
+// An empty value for a key means that the key will be removed from the metadata.
+// Metadata will return an error if the container has already been spawned.
+func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empty.Empty, error) {
+	pcont := svc.conts[newMD.Id]
+	if pcont == nil {
+		return nil, ErrNoSuchContainer
+	}
+	
+	if pcont.Status != pop.Container_CREATED {
+		return nil, ErrAlreadyLaunched
+	}
+
+	if newMD.Md == nil || newMD.Md.Entries == nil {
+		return nil, ErrInvalidArgument
+	}
+
+	pcont.metadata.Merge(newMD.Md.Entries)
+
+	return &empty.Empty{}, nil
+}
+
 // Start starts the container identified by the given filter.
 func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Container, error) {
 	if filter.Id == "" {

@@ -33,7 +33,12 @@ service Pop {
   // Delete stops and deletes the container identified by the given filter.
   rpc Delete(Filter) returns (google.protobuf.Empty);
 
+  // Metadata adds the given metadata values to the container that matches with the ID.
+  // An empty value for a key means that the key will be removed from the metadata.
+  rpc Metadata(NewMetadata) returns (google.protobuf.Empty);
+
   // Start starts the container identified by the given filter.
+  // Any dependency key stored in the server will be passed to the newly instantiated container.
   rpc Start(Filter) returns (Container);
 
   // login/logout functions
@@ -60,9 +65,19 @@ message Container {
   string flavour_id = 4;
   string command = 5;
   int64 created = 6;
-  string status = 7;
+
+  enum Status {
+    UNAVAILABLE = 0;
+    CREATED = 1;
+    RUNNING = 2;
+    EXITED  = 3;
+    DEAD    = 4;
+  }
+
+  Status status = 7;
   string extended_status = 8;
   map<string, Endpoint> endpoints = 9;
+  Metadata md = 10;
 }
 
 message ContainerConfig {
@@ -124,6 +139,12 @@ message Ip {
   Subnet subnet = 2;
 }
 
+// Metadata contains a key-value set of metadata
+// pairs, that will be exposed to the underlying container.
+message Metadata {
+  map<string, string> entries = 1;
+}
+
 message Network {
   string id = 1;
   string name = 2;
@@ -133,6 +154,11 @@ message Network {
 
 message NetworkList {
   repeated Network list = 1;
+}
+
+message NewMetadata {
+  string id = 1;
+  Metadata md = 2;
 }
 
 message Subnet {

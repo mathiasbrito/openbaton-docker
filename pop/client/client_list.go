@@ -321,7 +321,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 	return &catalogue.Server{
 		ExtID:          cont.Id,
 		Name:           name,
-		Status:         cont.Status,
+		Status:         cont.Status.String(),
 		ExtendedStatus: cont.ExtendedStatus,
 		Image:          nfvImage,
 		Flavour:        deploymentFlavour,

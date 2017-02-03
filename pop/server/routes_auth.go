@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	grpc_md "google.golang.org/grpc/metadata"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
@@ -126,7 +126,7 @@ func (svc *service) unaryInterceptor(ctx context.Context, req interface{}, info 
 
 // getToken retrieves the tokens from the current context metadata.
 func getTokens(ctx context.Context) []string {
-	md, ok := metadata.FromContext(ctx)
+	md, ok := grpc_md.FromContext(ctx)
 	if !ok {
 		return []string{}
 	}

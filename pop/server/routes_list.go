@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -105,7 +106,7 @@ func (svc *service) getContainerInfos(ctx context.Context) (*pop.ContainerList, 
 		conts[i] = &pop.Container{
 			Id:             dcont.ID,
 			Names:          dcont.Names,
-			Status:         dcont.State,
+			Status:         matchState(dcont.State),
 			ExtendedStatus: dcont.Status, // The Docker API is not very clear about this
 			ImageId:        dcont.ImageID,
 			FlavourId:      dockerFlavour.Id,
@@ -183,7 +184,7 @@ func (svc *service) getSingleContainerInfo(ctx context.Context, id string) (*pop
 	return &pop.Container{
 		Id:             dcont.ID,
 		Names:          []string{dcont.Name},
-		Status:         dcont.State.Status,
+		Status:         matchState(dcont.State.Status),
 		ExtendedStatus: dcont.State.Error,
 		ImageId:        dcont.Image,
 		FlavourId:      dockerFlavour.Id,
@@ -309,4 +310,23 @@ func extractSubnets(dSubnets []network.IPAMConfig) []*pop.Subnet {
 	}
 
 	return subs
+}
+
+func matchState(dockerState string) pop.Container_Status {
+	switch strings.ToLower(dockerState) {
+	case "created":
+		return pop.Container_CREATED
+	
+	case "running":
+		return pop.Container_RUNNING
+
+	case "exited":
+		return pop.Container_EXITED
+
+	case "dead":
+		return pop.Container_DEAD
+
+	default:
+		return pop.Container_UNAVAILABLE
+	}
 }

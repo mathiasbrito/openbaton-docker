@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -18,12 +19,44 @@ const (
 	TokenBytes = 32
 )
 
+type metadata map[string]string
+
+func (md metadata) Merge(newMD metadata) {
+	for key, val := range newMD {
+		md[key] = val
+	}
+}
+
+func (md metadata) Strings() []string {
+	ret := make([]string, 0, len(md))
+
+	for key, val := range md {
+		ret = append(ret, fmt.Sprintf("%s=%s", key, val))
+	}
+
+	return ret
+}
+
+// svcCont represent a link between a Pop Container
+// and a Docker container.
+type svcCont struct {
+    *pop.Container
+    DockerID string
+
+	metadata
+
+	// the container should be launched only once.
+	launch sync.Once
+}
+
 // concrete service 
 type service struct {
 	sessionManager
 	users Users
 	name  string
 	cln   *client.Client
+	conts map[string]*svcCont
+    contsMux sync.RWMutex
 }
 
 func newService(cfg Config) (*service, error) {
@@ -39,6 +72,7 @@ func newService(cfg Config) (*service, error) {
 			tk: make(map[string]struct{}),
 		},
 		users: cfg.Users,
+		conts: make(map[string]*svcCont),
 	}
 
 	if err := srv.checkDocker(); err != nil {

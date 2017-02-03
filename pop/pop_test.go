@@ -140,6 +140,7 @@ func TestLogin(tst *testing.T) {
 func TestLoginFail(tst *testing.T) {
 	brokenClient := client.Client{
 		Credentials: creds.Credentials{
+			Host:     laddr,
 			Username: "wrong user",
 			Password: "random pass",
 		},
@@ -149,6 +150,10 @@ func TestLoginFail(tst *testing.T) {
 
 	if err == nil {
 		tst.Error("should have failed")
+	}
+
+	if code := grpc.Code(err); code != grpc.Code(pop.AuthErr) {
+		tst.Error("wrong error code")
 	}
 
 	tst.Log(err)
