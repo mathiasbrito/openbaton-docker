@@ -274,16 +274,3 @@ func (h *handl) mgmt(vimID string) mgmt.VIMConnector {
 	return mgmt.NewConnector(vimID, h.acc)
 }
 
-func gatherMetadata(vnfcInstance *catalogue.VNFCInstance, les catalogue.LifecycleEvents, dep *catalogue.VNFRecordDependency) (md map[string]string) {
-	md = map[string]string{}
-
-	if dep.VNFCParameters == nil {
-		return
-	}
-
-	for _, le := range les {
-
-	}
-
-	return
-}
