@@ -3,6 +3,7 @@ package mgmt
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/mcilloni/go-openbaton/catalogue"
@@ -12,7 +13,7 @@ import (
 
 var (
 	// ErrInternal represents an internal failure.
-	ErrInternal        = errors.New("interal error")
+	ErrInternal        = errors.New("internal error")
 
 	// ErrTooFewParams is returned when a request has too few parameters for the 
 	// requested function.
@@ -26,6 +27,10 @@ var (
 // invoked. The Manager primary task is to deliver requests to the Handler and send its 
 // responses to the caller.
 type Handler interface {
+	// AddMetadata sets the given entries as metadata for the server specified by the given
+	// id, merging them with existing ones. An empty value will erase the key from the metadata.
+	AddMetadata(id string, entries map[string]string) error
+
 	// Check checks if a Server with the given ID is up in the VIM.
 	Check(id string) (*catalogue.Server, error)
 
@@ -38,13 +43,18 @@ func (m *manager) doRequest(req request) response {
 	var val interface{}
 	var err error
 
-	switch strings.ToLower(req.Func) {
+	switch fn := strings.ToLower(req.Func); fn {
+	case fnAddMetadata:
+		err = m.handleAddMetadata(req.Params)
+
 	case fnCheck:
 		val, err = m.handleCheck(req.Params)
 
 	case fnStart:
 		err = m.handleStart(req.Params)
 
+	default:
+		err = fmt.Errorf("unknown function: %s", fn)
 	}
 
 	var valB json.RawMessage
@@ -98,6 +108,15 @@ func (m *manager) handle(cnl *amqp.Channel, delivery amqp.Delivery) {
 		m.l.WithError(err).WithField("tag", tag).Error("error while acknowledging delivery")
 		return
 	}
+}
+
+func (m *manager) handleAddMetadata(params json.RawMessage) error {
+	var ap addMetadataParams
+	if err := json.Unmarshal(params, &ap); err != nil {
+		return ErrMalformedParams
+	}
+
+	return m.handl.AddMetadata(ap.ID, ap.Entries)
 }
 
 func (m *manager) handleCheck(params json.RawMessage) (*catalogue.Server, error) {

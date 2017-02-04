@@ -8,11 +8,16 @@ import (
 )
 
 type (
+	addMetadataParams struct {
+		ID string
+		Entries map[string]string
+	}
 	checkParams string
 	startParams string
 )
 
 var (
+	fnAddMetadata = "add_metadata"
 	fnCheck = "check"
 	fnStart = "start"
 )

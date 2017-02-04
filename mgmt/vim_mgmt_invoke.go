@@ -18,6 +18,7 @@ type VNFMChannelAccessor func() (channel.Channel, error)
 // Its methods mirror those of Handler; invoking one of them
 // actually invokes the method on the remote handler.
 type VIMConnector interface {
+	AddMetadata(id string, entries map[string]string) error
 	Check(id string) (*catalogue.Server, error)
 	Start(id string) error
 }
@@ -34,6 +35,23 @@ func NewConnector(vimname string, acc VNFMChannelAccessor) VIMConnector {
 type conn struct {
 	acc VNFMChannelAccessor
 	id  string
+}
+
+func (c conn) AddMetadata(id string, entries map[string]string) error {
+	resp, err := c.request(fnAddMetadata, addMetadataParams{
+		ID: id,
+		Entries: entries,
+	})
+	
+	if err != nil {
+		return err
+	}
+
+	if resp.Error != "" {
+		return errors.New(resp.Error)
+	}
+
+	return nil
 }
 
 func (c conn) Check(id string) (*catalogue.Server, error) {

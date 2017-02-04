@@ -1,6 +1,7 @@
 package mgmt
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -98,6 +99,12 @@ func (tc testChan) Status() channel.Status {
 
 type handler chan string
 
+func (h handler) AddMetadata(id string, entries map[string]string) error {
+	h <- fmt.Sprintf("id: %#v", entries)
+
+	return nil
+}
+
 func (h handler) Check(id string) (*catalogue.Server, error) {
 	return &catalogue.Server{ID: id}, nil
 }
@@ -130,13 +137,20 @@ func TestAll(t *testing.T) {
 		t.Errorf("expecting %s, got %s", sentID, srv.ID)
 	}
 
-	if err := c.Start("testid"); err != nil {
+	if err := c.Start(testID); err != nil {
 		t.Fatal(err)
 	}
 
-	id := <-r
+	t.Logf("recv id: %s", <-r)
 
-	t.Logf("recv id: %s", id)
+	if err := c.AddMetadata(testID, map[string]string{
+		"key": "value",
+		"key2": "value2",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(<-r)
 
 	m.Stop()
 }
