@@ -14,20 +14,22 @@ var setCmd = &cobra.Command{
 	Long: `Sets the metadata for a server having the given ID, given in the format id {key=value}.
 	
 For instance, this command can be invoked as:
-docker-pop md set <long UUID> key=val key1=val1`,
+docker-pop md set nginx-cont key=val key1=val1
+or
+docker-pop md set id:uuid key=val key1=val1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			failf("wrong number of arguments for md set: %d", len(args))
 		}
 
-		id := args[0]
+		filt := filter(args[0])
 		md := parseMd(args[1:])
 
-		if err := cl().AddMetadata(context.Background(), id, md); err != nil {
+		if err := cl().AddMetadata(context.Background(), filt, md); err != nil {
 			fail(err)
 		}
 
-		results(cl().FetchMetadata(context.Background(), id))
+		results(cl().FetchMetadata(context.Background(), filt))
 	},
 }
 

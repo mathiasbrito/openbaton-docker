@@ -10,23 +10,23 @@ import (
 var serversCmd = &cobra.Command{
 	Use:   "servers",
 	Short: "Prints servers",
-	Long:  `Prints a list of all the servers available on the server.`,
+	Long:  `Prints a list of all the servers available on the server.
+	
+You can also specify a filter to query for a single server.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		results(cl().Servers(context.Background()))
+		switch len(args) {
+		case 0:
+			results(cl().Servers(context.Background()))
+
+		case 1:
+			results(cl().Server(context.Background(), filter(args[0])))
+
+		default:
+			fail("too many parameters")
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(serversCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serversCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serversCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 }

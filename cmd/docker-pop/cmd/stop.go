@@ -14,27 +14,18 @@ var stopCmd = &cobra.Command{
 	
 Per example, to stop a server you have previously started, you may use the following invocation:
 
-docker-pop stop <container UUID>`,
+docker-pop stop nginx-cont
+or
+docker-pop stop id:uuid`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			failf("wrong number of arguments for start: %d", len(args))
 		}
 
-		results(nil, cl().Stop(context.Background(), args[0]))
+		results(nil, cl().Stop(context.Background(), filter(args[0])))
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(stopCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// stopCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// stopCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 }

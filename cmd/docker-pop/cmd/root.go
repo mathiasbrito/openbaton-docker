@@ -32,15 +32,6 @@ The client must authenticate with the server either via parameters specified thr
 	}
 )
 
-// Execute adds all child commands to the root command sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
-}
-
 func init() {
 	cobra.OnInitialize(viper.AutomaticEnv)
 
@@ -60,15 +51,27 @@ func init() {
 	viper.BindPFlag("host", RootCmd.PersistentFlags().Lookup("host"))
 }
 
-func fail(v ...interface{}) {
-	newV := append([]interface{}{"error: "}, v...)
-
-	fmt.Fprintln(os.Stderr, newV...)
-	os.Exit(1)
+// Execute adds all child commands to the root command sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 }
 
-func failf(fstr string, params ...interface{}) {
-	fail(fmt.Sprintf(fstr, params...))
+func auth() (string, string) {
+	auth := viper.GetString("auth")
+	if auth == "" {
+		fail("no auth data provided")
+	}
+
+	splitted := strings.Split(auth, ":")
+	if len(splitted) != 2 {
+		failf("malformed auth string %s", auth)
+	}
+
+	return splitted[0], splitted[1]
 }
 
 func cl() *client.Client {
@@ -88,18 +91,23 @@ func credentials() creds.Credentials {
 	}
 }
 
-func auth() (string, string) {
-	auth := viper.GetString("auth")
-	if auth == "" {
-		fail("no auth data provided")
+func fail(v ...interface{}) {
+	newV := append([]interface{}{"error: "}, v...)
+
+	fmt.Fprintln(os.Stderr, newV...)
+	os.Exit(1)
+}
+
+func failf(fstr string, params ...interface{}) {
+	fail(fmt.Sprintf(fstr, params...))
+}
+
+func filter(v string) client.Filter {
+	if len(v) > 3 && strings.HasPrefix(v, "id:") {
+		return client.IDFilter(v[3:])
 	}
 
-	splitted := strings.Split(auth, ":")
-	if len(splitted) != 2 {
-		failf("malformed auth string %s", auth)
-	}
-
-	return splitted[0], splitted[1]
+	return client.NameFilter(v)
 }
 
 func results(out interface{}, err error) {

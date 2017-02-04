@@ -14,26 +14,18 @@ var startCmd = &cobra.Command{
 	
 Per example, to start a server you have previously created, you may use the following invocation:
 
-docker-pop start <container UUID>`,
+docker-pop start nginx-cont
+or
+docker-pop start id:uuid`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			failf("wrong number of arguments for start: %d", len(args))
 		}
 
-		results(cl().Start(context.Background(), args[0]))
+		results(cl().Start(context.Background(), filter(args[0])))
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(startCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

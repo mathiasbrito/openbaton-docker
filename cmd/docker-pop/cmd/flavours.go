@@ -10,23 +10,23 @@ import (
 var flavoursCmd = &cobra.Command{
 	Use:   "flavours",
 	Short: "Prints flavours",
-	Long:  `Prints a list of all the flavours available on the server.`,
+	Long:  `Prints a list of all the flavours available on the server.
+	
+You can also specify a filter to query for a single flavour.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		results(cl().Flavours(context.Background()))
+		switch len(args) {
+		case 0:
+			results(cl().Flavours(context.Background()))
+
+		case 1:
+			results(cl().Flavour(context.Background(), filter(args[0])))
+
+		default:
+			fail("too many parameters")
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(flavoursCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// flavoursCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// flavoursCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 }
