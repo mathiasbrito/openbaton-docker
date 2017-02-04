@@ -153,7 +153,28 @@ func (cln *Client) fetchImages(ctx context.Context, f Filter) ([]*catalogue.NFVI
 		return nil, err
 	}
 
-	return cln.makeImages(imgs), nil
+	// if there is no such image, end here
+	if len(imgs) == 0 {
+		return []*catalogue.NFVImage{}, nil
+	}
+
+	nfvImgs := cln.makeImages(imgs)
+
+	// if we are filtering for a name, than 
+	// we need to get just a single image and set the right name to it.
+	// if we are filtering for an ID, then just return one of them, they just have 
+	// different names.
+	switch rf := f.(type) {
+	case NameFilter:
+		nfvImgs[0].Name = string(rf)
+		return nfvImgs[:1], nil
+
+	case IDFilter:
+		return nfvImgs[:1], nil
+	
+	default:
+		return nfvImgs, nil
+	}
 }
 
 // fetchNetworks fetches and converts pop Networks into catalogue.Network instances.
@@ -358,3 +379,4 @@ func (cln *Client) makeServers(ctx context.Context, conts []*pop.Container) ([]*
 
 	return servs, nil
 }
+
