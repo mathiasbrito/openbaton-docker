@@ -112,6 +112,9 @@ func filter(cf Filter) *pop.Filter {
 	filter := &pop.Filter{}
 
 	switch f := cf.(type) {
+	case nil:
+		// do nothing
+
 	case IDFilter:
 		filter.Options = &pop.Filter_Id{
 			Id: string(f),

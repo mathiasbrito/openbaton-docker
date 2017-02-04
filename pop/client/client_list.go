@@ -10,7 +10,7 @@ import (
 
 // Flavour returns the flavour having the given filter as an OpenBaton DeploymentFlavour.
 func (cln *Client) Flavour(ctx context.Context, f Filter) (*catalogue.DeploymentFlavour, error) {
-	flavs, err := cln.fetchFlavours(ctx, filter(f))
+	flavs, err := cln.fetchFlavours(ctx, f)
 	if err != nil {
 		return nil, err
 	}
@@ -29,12 +29,12 @@ func (cln *Client) Flavour(ctx context.Context, f Filter) (*catalogue.Deployment
 
 // Flavours returns all the available flavours as OpenBaton DeploymentFlavour.
 func (cln *Client) Flavours(ctx context.Context) ([]*catalogue.DeploymentFlavour, error) {
-	return cln.fetchFlavours(ctx, &pop.Filter{})
+	return cln.fetchFlavours(ctx, nil)
 }
 
 // Image returns the image on the server having the given filter as an OpenBaton NFVImage struct.
 func (cln *Client) Image(ctx context.Context, f Filter) (*catalogue.NFVImage, error) {
-	imgs, err := cln.fetchImages(ctx, filter(f))
+	imgs, err := cln.fetchImages(ctx, f)
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +53,12 @@ func (cln *Client) Image(ctx context.Context, f Filter) (*catalogue.NFVImage, er
 
 // Images returns the images on the server as OpenBaton NFVImage structs.
 func (cln *Client) Images(ctx context.Context) ([]*catalogue.NFVImage, error) {
-	return cln.fetchImages(ctx, &pop.Filter{})
+	return cln.fetchImages(ctx, nil)
 }
 
 // Network returns the network on the server having the given filter as an OpenBaton Network struct.
 func (cln *Client) Network(ctx context.Context, f Filter) (*catalogue.Network, error) {
-	nets, err := cln.fetchNetworks(ctx, filter(f))
+	nets, err := cln.fetchNetworks(ctx, f)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +77,12 @@ func (cln *Client) Network(ctx context.Context, f Filter) (*catalogue.Network, e
 
 // Networks returns the networks on the server as OpenBaton Network structs.
 func (cln *Client) Networks(ctx context.Context) ([]*catalogue.Network, error) {
-	return cln.fetchNetworks(ctx, &pop.Filter{})
+	return cln.fetchNetworks(ctx, nil)
 }
 
 // Server returns the container on the server having the given id as an OpenBaton Server struct.
 func (cln *Client) Server(ctx context.Context, f Filter) (*catalogue.Server, error) {
-	srvs, err := cln.fetchServers(ctx, filter(f))
+	srvs, err := cln.fetchServers(ctx, f)
 	if err != nil {
 		return nil, err
 	}
@@ -101,15 +101,15 @@ func (cln *Client) Server(ctx context.Context, f Filter) (*catalogue.Server, err
 
 // Servers returns the containers on the server as OpenBaton Server structs.
 func (cln *Client) Servers(ctx context.Context) ([]*catalogue.Server, error) {
-	return cln.fetchServers(ctx, &pop.Filter{})
+	return cln.fetchServers(ctx, nil)
 }
 
 // fetchFlavours fetches and converts pop Flavours into DeploymentFlavours.
-func (cln *Client) fetchFlavours(ctx context.Context, filter *pop.Filter) ([]*catalogue.DeploymentFlavour, error) {
+func (cln *Client) fetchFlavours(ctx context.Context, f Filter) ([]*catalogue.DeploymentFlavour, error) {
 	var rflavs []*pop.Flavour
 
 	op := func(stub pop.PopClient) error {
-		flist, err := stub.Flavours(ctx, filter)
+		flist, err := stub.Flavours(ctx, filter(f))
 		if err != nil {
 			return err
 		}
@@ -131,11 +131,11 @@ func (cln *Client) fetchFlavours(ctx context.Context, filter *pop.Filter) ([]*ca
 }
 
 // fetchImages fetches and converts pop Images into NFVImages.
-func (cln *Client) fetchImages(ctx context.Context, filter *pop.Filter) ([]*catalogue.NFVImage, error) {
+func (cln *Client) fetchImages(ctx context.Context, f Filter) ([]*catalogue.NFVImage, error) {
 	var imgs []*pop.Image
 
 	op := func(stub pop.PopClient) error {
-		ilist, err := stub.Images(ctx, filter)
+		ilist, err := stub.Images(ctx, filter(f))
 		if err != nil {
 			return err
 		}
@@ -157,11 +157,11 @@ func (cln *Client) fetchImages(ctx context.Context, filter *pop.Filter) ([]*cata
 }
 
 // fetchNetworks fetches and converts pop Networks into catalogue.Network instances.
-func (cln *Client) fetchNetworks(ctx context.Context, filter *pop.Filter) ([]*catalogue.Network, error) {
+func (cln *Client) fetchNetworks(ctx context.Context, f Filter) ([]*catalogue.Network, error) {
 	var rnets []*pop.Network
 
 	op := func(stub pop.PopClient) error {
-		nlist, err := stub.Networks(ctx, filter)
+		nlist, err := stub.Networks(ctx, filter(f))
 		if err != nil {
 			return err
 		}
@@ -183,11 +183,11 @@ func (cln *Client) fetchNetworks(ctx context.Context, filter *pop.Filter) ([]*ca
 }
 
 // fetchServers gets and creates catalogue.Server instances from pop containers.
-func (cln *Client) fetchServers(ctx context.Context, filter *pop.Filter) ([]*catalogue.Server, error) {
+func (cln *Client) fetchServers(ctx context.Context, f Filter) ([]*catalogue.Server, error) {
 	var conts []*pop.Container
 
 	op := func(stub pop.PopClient) error {
-		clist, err := stub.Containers(ctx, filter)
+		clist, err := stub.Containers(ctx, filter(f))
 		if err != nil {
 			return err
 		}
@@ -227,26 +227,38 @@ func (cln *Client) makeFlavours(flavs []*pop.Flavour) []*catalogue.DeploymentFla
 	return depFlavs
 }
 
-// makeImage converts a pop Image into a NFVImage.
-func (cln *Client) makeImage(img *pop.Image) *catalogue.NFVImage {
-	name := ""
-	if img.Names != nil && len(img.Names) > 0 {
-		name = img.Names[0]
-	}
-
-	return &catalogue.NFVImage{
+// makeImage converts a pop Image into one (or more) NFVImage.
+func (cln *Client) makeImage(img *pop.Image) []*catalogue.NFVImage {
+	base := catalogue.NFVImage{
 		ExtID:   img.Id,
-		Name:    name,
 		Created: catalogue.UnixDate(img.Created),
 	}
+
+	if img.Names == nil || len(img.Names) == 0 {
+		return []*catalogue.NFVImage{&base}
+	}
+
+	ret := make([]*catalogue.NFVImage, 0, len(img.Names))
+
+	// create an image for each tag.
+	for _, name := range img.Names {
+		img := new(catalogue.NFVImage)
+		*img = base
+
+		img.Name = name
+
+		ret = append(ret, img)
+	}
+
+	return ret
 }
 
 // makeImages converts a list of pop Image into a list of NFVImage.
 func (cln *Client) makeImages(imgs []*pop.Image) []*catalogue.NFVImage {
-	nfvImgs := make([]*catalogue.NFVImage, len(imgs))
+	nfvImgs := make([]*catalogue.NFVImage, 0, len(imgs)) // pre allocate at least len(imgs)
 
-	for i, img := range imgs {
-		nfvImgs[i] = cln.makeImage(img)
+	for _, img := range imgs {
+		nfvImgs = append(nfvImgs, cln.makeImage(img)...)
 	}
 
 	return nfvImgs
