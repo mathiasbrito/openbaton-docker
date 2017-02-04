@@ -12,9 +12,9 @@ var startCmd = &cobra.Command{
 	Short: "Starts a server",
 	Long: `start starts a new server in a container, using the parameters provided as its arguments.
 	
-Per example, to start a container named "nginx-cont" you have previously created, you may use the following invocation:
+Per example, to start a server you have previously created, you may use the following invocation:
 
-docker-pop start nginx-cont`,
+docker-pop start <container UUID>`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			failf("wrong number of arguments for start: %d", len(args))

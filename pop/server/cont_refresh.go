@@ -65,7 +65,8 @@ func (svc *service) refreshStatuses() error {
 // of a container, matching with its Docker correspective container
 func (svc *service) updateStatuses(states map[string]pop.Container_Status) {
 	for _, cont := range svc.conts {
-		if cont.DockerID != "" {
+		// only running Pop containers have a Docker container
+		if cont.DockerID != "" && cont.Status == pop.Container_RUNNING {
 			state, found := states[cont.DockerID]
 			// The Docker container may have been shut down by any reason. In this case,
 			// mark the Pop container as FAILED.
@@ -76,8 +77,16 @@ func (svc *service) updateStatuses(states map[string]pop.Container_Status) {
 				continue
 			}
 
-			// update the state
 			cont.Status = state
+
+			switch state {
+			case pop.Container_EXITED:
+				cont.ExtendedStatus = "the container cleanly exited"
+				cont.DockerID = ""
+
+			case pop.Container_FAILED:
+				cont.ExtendedStatus = "the Docker container terminated unexpectedly"
+			}
 		}
 	}
 }

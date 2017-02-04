@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -113,7 +114,8 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 	svc.names.Delete(pcont.Names[0])
 
 	// if someone still holds a reference to this container
-	pcont.Status = pop.Container_EXITED
+	pcont.Status = pop.Container_UNAVAILABLE
+	pcont.ExtendedStatus = "this container has been deleted"
 	return &empty.Empty{}, nil
 }
 
@@ -185,7 +187,6 @@ func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Contain
 		return nil, err
 	}
 
-	pcont.DockerID = ccb.ID
 	if len(ccb.Warnings) != 0 {
 		pcont.ExtendedStatus = fmt.Sprintf("warnings from container instantiation: [%s]", strings.Join(ccb.Warnings, ", "))
 	}
@@ -196,7 +197,13 @@ func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Contain
 		return nil, err
 	}
 
+	if err := svc.updateContainer(ctx, pcont, ccb.ID); err != nil {
+		pcont.ExtendedStatus = "warning: update of this container failed"
+		return nil, err
+	}
+
 	pcont.Status = pop.Container_RUNNING
+	pcont.ExtendedStatus = "the container is running"
 
 	return pcont.Container, nil
 }
@@ -321,6 +328,35 @@ func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
 	}
 
 	pcont.Status = pop.Container_EXITED
+	pcont.ExtendedStatus = "the container has exited"
+	pcont.DockerID = ""
+
+	return nil
+}
+
+func (svc *service) updateContainer(ctx context.Context, pcont *svcCont, dockerID string) error {
+	dcont, err := svc.cln.ContainerInspect(ctx, dockerID)
+	if err != nil {
+		return err
+	}
+
+	started, err := time.Parse(time.RFC3339Nano, dcont.Created)
+	if err != nil {
+		return pop.InternalErr
+	}
+
+	b := bytes.Buffer{}
+	for _, part := range dcont.Config.Cmd {
+		b.WriteString(part)
+		b.WriteRune(' ')
+	}
+
+	pcont.DockerID = dockerID
+	pcont.Command = b.String()
+	pcont.FlavourId = dockerFlavour.Id
+	pcont.Started = started.Unix()
+
+	pcont.Endpoints = extractEndpoints(dcont.NetworkSettings.Networks)
 
 	return nil
 }

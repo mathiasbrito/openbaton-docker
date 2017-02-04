@@ -327,6 +327,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 		Flavour:        deploymentFlavour,
 		IPs:            ipMap,
 		FloatingIPs:    map[string]string{},
+		Created:		catalogue.UnixDate(cont.Created),
 	}, nil
 }
 

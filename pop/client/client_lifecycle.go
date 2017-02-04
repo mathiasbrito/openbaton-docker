@@ -131,17 +131,8 @@ func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, err
 
 // Stop stops a Server launched by Start or Spawn.
 func (cln *Client) Stop(ctx context.Context, id string) error {
-	var cont *pop.Container
-
 	op := func(stub pop.PopClient) (err error) {
-		if _, err := stub.Stop(ctx, &pop.Filter{Id: id}); err != nil {
-			return err
-		}
-
-		if cont == nil {
-			return errors.New("no container has been stopped")
-		}
-
+		_, err = stub.Stop(ctx, &pop.Filter{Id: id})
 		return
 	}
 

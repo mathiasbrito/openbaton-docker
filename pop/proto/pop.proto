@@ -68,6 +68,7 @@ message Container {
   string flavour_id = 4;
   string command = 5;
   int64 created = 6;
+  int64 started = 7;
 
   enum Status {
     UNAVAILABLE = 0;
@@ -77,10 +78,10 @@ message Container {
     FAILED    = 4;
   }
 
-  Status status = 7;
-  string extended_status = 8;
-  map<string, Endpoint> endpoints = 9;
-  Metadata md = 10;
+  Status status = 8;
+  string extended_status = 9;
+  map<string, Endpoint> endpoints = 10;
+  Metadata md = 11;
 }
 
 message ContainerConfig {
