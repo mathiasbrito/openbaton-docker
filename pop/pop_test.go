@@ -59,7 +59,7 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatal(err)
 	}
 
-	err = cln.AddMetadata(context.Background(), srv.ExtID, map[string]string {
+	err = cln.AddMetadata(context.Background(), client.IDFilter(srv.ExtID), map[string]string {
 		"key" : "value",
 	})
 	
@@ -67,7 +67,7 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatal(err)
 	}
 
-	md, err := cln.FetchMetadata(context.Background(), srv.ExtID)
+	md, err := cln.FetchMetadata(context.Background(), client.IDFilter(srv.ExtID))
 	if err != nil {
 		tst.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatalf("metadata failure, %s != value", val)
 	}
 
-	err = cln.AddMetadata(context.Background(), srv.ExtID, map[string]string {
+	err = cln.AddMetadata(context.Background(), client.IDFilter(srv.ExtID), map[string]string {
 		"key" : "", // delete key
 	})
 	
@@ -93,7 +93,7 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatal(err)
 	}
 
-	md, err = cln.FetchMetadata(context.Background(), srv.ExtID)
+	md, err = cln.FetchMetadata(context.Background(), client.IDFilter(srv.ExtID))
 	if err != nil {
 		tst.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatal("key is still in metadata")
 	}
 
-	if err := cln.Delete(context.Background(), srv.ExtID); err != nil {
+	if err := cln.Delete(context.Background(), client.IDFilter(srv.ExtID)); err != nil {
 		tst.Fatal(err)
 	}
 }
@@ -137,7 +137,11 @@ func TestCreateDelete(tst *testing.T) {
 		tst.Fatal("spawned server not found")
 	}
 
-	if err := cln.Delete(context.Background(), srv.ExtID); err != nil {
+	if _, err := cln.Server(context.Background(), client.NameFilter(srv.Name)); err != nil {
+		tst.Fatal(err)
+	}
+
+	if err := cln.Delete(context.Background(), client.IDFilter(srv.ExtID)); err != nil {
 		tst.Fatal(err)
 	}
 

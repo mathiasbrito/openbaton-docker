@@ -8,9 +8,9 @@ import (
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 )
 
-// Flavour returns the flavour having the given id as an OpenBaton DeploymentFlavour.
-func (cln *Client) Flavour(ctx context.Context, id string) (*catalogue.DeploymentFlavour, error) {
-	flavs, err := cln.fetchFlavours(ctx, &pop.Filter{Id: id})
+// Flavour returns the flavour having the given filter as an OpenBaton DeploymentFlavour.
+func (cln *Client) Flavour(ctx context.Context, f Filter) (*catalogue.DeploymentFlavour, error) {
+	flavs, err := cln.fetchFlavours(ctx, filter(f))
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +32,9 @@ func (cln *Client) Flavours(ctx context.Context) ([]*catalogue.DeploymentFlavour
 	return cln.fetchFlavours(ctx, &pop.Filter{})
 }
 
-// Image returns the image on the server having the given id as an OpenBaton NFVImage struct.
-func (cln *Client) Image(ctx context.Context, id string) (*catalogue.NFVImage, error) {
-	imgs, err := cln.fetchImages(ctx, &pop.Filter{Id: id})
+// Image returns the image on the server having the given filter as an OpenBaton NFVImage struct.
+func (cln *Client) Image(ctx context.Context, f Filter) (*catalogue.NFVImage, error) {
+	imgs, err := cln.fetchImages(ctx, filter(f))
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +56,9 @@ func (cln *Client) Images(ctx context.Context) ([]*catalogue.NFVImage, error) {
 	return cln.fetchImages(ctx, &pop.Filter{})
 }
 
-// Network returns the network on the server having the given id as an OpenBaton Network struct.
-func (cln *Client) Network(ctx context.Context, id string) (*catalogue.Network, error) {
-	nets, err := cln.fetchNetworks(ctx, &pop.Filter{Id: id})
+// Network returns the network on the server having the given filter as an OpenBaton Network struct.
+func (cln *Client) Network(ctx context.Context, f Filter) (*catalogue.Network, error) {
+	nets, err := cln.fetchNetworks(ctx, filter(f))
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +81,8 @@ func (cln *Client) Networks(ctx context.Context) ([]*catalogue.Network, error) {
 }
 
 // Server returns the container on the server having the given id as an OpenBaton Server struct.
-func (cln *Client) Server(ctx context.Context, id string) (*catalogue.Server, error) {
-	srvs, err := cln.fetchServers(ctx, &pop.Filter{Id: id})
+func (cln *Client) Server(ctx context.Context, f Filter) (*catalogue.Server, error) {
+	srvs, err := cln.fetchServers(ctx, filter(f))
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 	// also fetch the image
 	var nfvImage *catalogue.NFVImage
 	if cont.ImageId != "" {
-		nfvImage, err = cln.Image(ctx, cont.ImageId)
+		nfvImage, err = cln.Image(ctx, IDFilter(cont.ImageId))
 		if err != nil {
 			return nil, err
 		}
@@ -296,7 +296,7 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 
 	var deploymentFlavour *catalogue.DeploymentFlavour
 	if cont.FlavourId != "" {
-		deploymentFlavour, err = cln.Flavour(ctx, cont.FlavourId)
+		deploymentFlavour, err = cln.Flavour(ctx, IDFilter(cont.FlavourId))
 		if err != nil {
 			return nil, err
 		}

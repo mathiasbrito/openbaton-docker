@@ -10,12 +10,12 @@ import (
 
 // AddMetadata adds metadata keys to a not yet started container.
 // New keys will match existing ones; any empty value will delete its key from the map server side.
-func (cln *Client) AddMetadata(ctx context.Context, id string, keys map[string]string) error {
+func (cln *Client) AddMetadata(ctx context.Context, f Filter, keys map[string]string) error {
 	op := func(stub pop.PopClient) (err error) {
 		_, err = stub.Metadata(
 			ctx,
 			&pop.NewMetadata{
-				Id: id,
+				Filter: filter(f),
 				Md: &pop.Metadata{
 					Entries: keys,
 				},
@@ -78,9 +78,9 @@ func (cln *Client) Create(ctx context.Context, name, imageID, flavorID string, i
 }
 
 // Delete stops and deletes the container identified by the given filter.
-func (cln *Client) Delete(ctx context.Context, id string) error {
+func (cln *Client) Delete(ctx context.Context, f Filter) error {
 	op := func(stub pop.PopClient) (err error) {
-		_, err = stub.Delete(ctx, &pop.Filter{Id: id})
+		_, err = stub.Delete(ctx, filter(f))
 		if err != nil {
 			return
 		}
@@ -102,15 +102,15 @@ func (cln *Client) Spawn(ctx context.Context, name, imageID, flavorID string, ip
 		return nil, err
 	}
 
-	return cln.Start(ctx, srv.ExtID)
+	return cln.Start(ctx, IDFilter(srv.ExtID))
 }
 
 // Start starts a Server created by Create().
-func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, error) {
+func (cln *Client) Start(ctx context.Context, f Filter) (*catalogue.Server, error) {
 	var cont *pop.Container
 
 	op := func(stub pop.PopClient) (err error) {
-		cont, err = stub.Start(ctx, &pop.Filter{Id: id})
+		cont, err = stub.Start(ctx, filter(f))
 		if err != nil {
 			return
 		}
@@ -130,9 +130,9 @@ func (cln *Client) Start(ctx context.Context, id string) (*catalogue.Server, err
 }
 
 // Stop stops a Server launched by Start or Spawn.
-func (cln *Client) Stop(ctx context.Context, id string) error {
+func (cln *Client) Stop(ctx context.Context, f Filter) error {
 	op := func(stub pop.PopClient) (err error) {
-		_, err = stub.Stop(ctx, &pop.Filter{Id: id})
+		_, err = stub.Stop(ctx, filter(f))
 		return
 	}
 

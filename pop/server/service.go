@@ -45,24 +45,6 @@ func (md metadata) Strings() []string {
 	return ret
 }
 
-// names is a set of strings containing names.
-// Using an hashmap as a set is MUCH faster than searching for 
-// name uniqueness in service.conts through an interator.
-type names map[string]struct{} 
-
-func (n names) Contains(name string) (found bool) {
-	_, found = n[name]
-	return 
-}
-
-func (n names) Delete(name string) {
-	delete(n, name)
-}
-
-func (n names) Put(name string) {
-	n[name] = struct{}{}
-}
-
 // svcCont represent a link between a Pop Container
 // and a Docker container.
 type svcCont struct {
@@ -84,7 +66,12 @@ type service struct {
 	name     string
 	cln      *client.Client
 	conts    map[string]*svcCont
-	names	 names
+
+	// names is a map of name -> id for conts;
+	// this allows fast matching of the id from the name
+
+	names	 map[string]string
+	
 	contsMux sync.RWMutex
 	quitChan chan struct{}
 }
@@ -103,7 +90,7 @@ func newService(cfg Config) (*service, error) {
 		},
 		users:    cfg.Users,
 		conts:    make(map[string]*svcCont),
-		names:	  make(names),
+		names:	  make(map[string]string),
 		quitChan: make(chan struct{}),
 	}
 

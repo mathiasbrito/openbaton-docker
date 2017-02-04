@@ -38,9 +38,9 @@ func (cln *Client) Info(ctx context.Context) (infos *pop.Infos, err error) {
 
 // FetchMetadata fetches the metadata for a given server.
 // This function is generally not needed by a normal user of this library.
-func (cln *Client) FetchMetadata(ctx context.Context, id string) (md map[string]string, err error) {
+func (cln *Client) FetchMetadata(ctx context.Context, f Filter) (md map[string]string, err error) {
 	err = cln.doRetry(func(stub pop.PopClient) error {
-		conts, err := stub.Containers(ctx, &pop.Filter{Id: id})
+		conts, err := stub.Containers(ctx, filter(f))
 		if err != nil {
 			return err
 		}
@@ -91,4 +91,40 @@ func (cln *Client) stub() (pop.PopClient, error) {
 	}
 
 	return sess.stub(), nil
+}
+
+// Filter represents a filter type to be applied during a server query.
+type Filter interface{
+	isFilterType() // dummy method to force users to use the filters below
+}
+
+// IDFilter contains the ID that should be matched by an operation.
+type IDFilter string
+
+func (IDFilter) isFilterType() {}
+
+// NameFilter contains the name that will be matched during an operation.
+type NameFilter string
+
+func (NameFilter) isFilterType() {}
+
+func filter(cf Filter) *pop.Filter {
+	filter := &pop.Filter{}
+
+	switch f := cf.(type) {
+	case IDFilter: 
+		filter.Options = &pop.Filter_Id{
+			Id: string(f),
+		}
+
+	case NameFilter:
+		filter.Options = &pop.Filter_Name{
+			Name: string(f),
+		}
+
+	default:
+		panic("unknown filter type")
+	}
+
+	return filter
 }

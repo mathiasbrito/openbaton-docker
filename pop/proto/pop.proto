@@ -109,8 +109,12 @@ message Endpoint {
   string mac = 5;
 }
 
+// Filter is used to specify a filter that matches a container.
 message Filter {
-  string id = 1; 
+  oneof options {
+    string id = 1;
+    string name = 2;
+  }
 }
 
 message Flavour {
@@ -161,7 +165,7 @@ message NetworkList {
 }
 
 message NewMetadata {
-  string id = 1;
+  Filter filter = 1;
   Metadata md = 2;
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -25,7 +26,8 @@ var (
 	ErrAlreadyStopped  = grpc.Errorf(codes.Unavailable, "container already stopped")
 	ErrInvalidArgument = grpc.Errorf(codes.InvalidArgument, "invalid argument provided")
 	ErrInvalidState    = grpc.Errorf(codes.FailedPrecondition, "container is in an invalid state")
-	ErrNoSuchContainer = grpc.Errorf(codes.NotFound, "no container for the given ID")
+	ErrNoSuchContainer = grpc.Errorf(codes.NotFound, "no container for the given filter")
+	ErrNoSuchFlavour   = grpc.Errorf(codes.NotFound, "no flavour for the given filter")
 	ErrNotStarted      = grpc.Errorf(codes.Unavailable, "container not started yet")
 )
 
@@ -50,7 +52,7 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 	svc.contsMux.Lock()
 	defer svc.contsMux.Unlock()
 
-	if svc.names.Contains(cfg.Name) {
+	if _, found := svc.names[cfg.Name]; found {
 		return nil, grpc.Errorf(codes.AlreadyExists, "container name %s already taken", cfg.Name)
 	}
 
@@ -78,25 +80,21 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 		DockerID:  "", // not yet assigned
 	}
 
-	// Names has always at least an element
-	svc.names.Put(cont.Names[0])
+	// cont.Names has always at least an element
+	svc.names[cont.Names[0]] = cont.Id
 
 	return cont, nil
 }
 
 // Delete removes the containers identified by the given filter, stopping it before if necessary.
 func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empty, error) {
-	if filter.Id == "" {
-		return nil, errors.New("no container specified for Delete")
-	}
-
 	// get the lock before editing the map
 	svc.contsMux.Lock()
 	defer svc.contsMux.Unlock()
 
-	pcont, ok := svc.conts[filter.Id]
-	if !ok {
-		return nil, ErrNoSuchContainer
+	pcont, err := svc.filterContainer(filter)
+	if err != nil {
+		return nil, err
 	}
 
 	// The sync.Mutex avoids race conditions while deleting the container.
@@ -110,8 +108,8 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 	}
 
 	// deletes the container from the container list and from names
-	delete(svc.conts, filter.Id)
-	svc.names.Delete(pcont.Names[0])
+	delete(svc.conts, pcont.Id)
+	delete(svc.names, pcont.Names[0])
 
 	// if someone still holds a reference to this container
 	pcont.Status = pop.Container_UNAVAILABLE
@@ -123,12 +121,16 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 // An empty value for a key means that the key will be removed from the metadata.
 // Metadata will return an error if the container has already been spawned.
 func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empty.Empty, error) {
+	if newMD.Filter == nil {
+		return nil, errors.New("empty filter")
+	}
+	
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 
-	pcont := svc.conts[newMD.Id]
-	if pcont == nil {
-		return nil, ErrNoSuchContainer
+	pcont, err := svc.filterContainer(newMD.Filter)
+	if err != nil {
+		return nil, err
 	}
 
 	pcont.mux.Lock()
@@ -150,17 +152,13 @@ func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empt
 // Start starts the container identified by the given filter, by creating and launching a Docker
 // container with its metadata as environment variables.
 func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Container, error) {
-	if filter.Id == "" {
-		return nil, errors.New("no container specified for Start")
-	}
-
 	// In case a container is quickly created and then started, this avoids races.
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 
-	pcont, ok := svc.conts[filter.Id]
-	if !ok {
-		return nil, fmt.Errorf("start: no container with id %s", filter.Id)
+	pcont, err := svc.filterContainer(filter)
+	if err != nil {
+		return nil, err
 	}
 
 	pcont.mux.Lock()
@@ -210,17 +208,13 @@ func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Contain
 
 // Stop stops the container identified by the given filter.
 func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty, error) {
-	if filter.Id == "" {
-		return nil, errors.New("no container specified for Start")
-	}
-
 	// In case a container is quickly created and then stopped, this avoids races.
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 
-	pcont, ok := svc.conts[filter.Id]
-	if !ok {
-		return nil, fmt.Errorf("stop: no container with id %s", filter.Id)
+	pcont, err := svc.filterContainer(filter)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get a lock on this container, to safely handle its state
@@ -254,7 +248,9 @@ func (svc *service) checkConfig(ctx context.Context, cfg *pop.ContainerConfig) (
 	}
 
 	// check if the image exists
-	if _, err := svc.getSingleImageInfo(ctx, cfg.ImageId); err != nil {
+	filter := &pop.Filter{Options: &pop.Filter_Id{Id: cfg.ImageId}}
+
+	if _, err := svc.getSingleImageInfo(ctx, filter); err != nil {
 		return nil, err
 	}
 
@@ -359,4 +355,70 @@ func (svc *service) updateContainer(ctx context.Context, pcont *svcCont, dockerI
 	pcont.Endpoints = extractEndpoints(dcont.NetworkSettings.Networks)
 
 	return nil
+}
+
+func extractEndpoint(endpointSettings *network.EndpointSettings) *pop.Endpoint {
+	var ipv4, ipv6 *pop.Ip
+
+	// IPAMConfig may contain pre-allocated IP addresses for a created, but not yet started, container.
+	if endpointSettings.IPAddress != "" {
+		fullAddr := fmt.Sprintf("%s/%d", endpointSettings.IPAddress, endpointSettings.IPPrefixLen)
+		_, ipnet, err := net.ParseCIDR(fullAddr)
+		if err != nil {
+			panic("should not happen: " + err.Error())
+		}
+
+		ipv4 = &pop.Ip{
+			Address: endpointSettings.IPAddress,
+			Subnet: &pop.Subnet{
+				Cidr:    ipnet.String(),
+				Gateway: endpointSettings.Gateway,
+			},
+		}
+	} else {
+		if endpointSettings.IPAMConfig != nil {
+			ipv4 = &pop.Ip{
+				Address: endpointSettings.IPAMConfig.IPv4Address,
+			}
+		}
+	}
+
+	if endpointSettings.GlobalIPv6Address != "" {
+		fullAddr := fmt.Sprintf("%s/%d", endpointSettings.GlobalIPv6Address, endpointSettings.GlobalIPv6PrefixLen)
+		_, ipnet, err := net.ParseCIDR(fullAddr)
+		if err != nil {
+			panic("should not happen: " + err.Error())
+		}
+
+		ipv6 = &pop.Ip{
+			Address: endpointSettings.GlobalIPv6Address,
+			Subnet: &pop.Subnet{
+				Cidr:    ipnet.String(),
+				Gateway: endpointSettings.IPv6Gateway,
+			},
+		}
+	} else {
+		if endpointSettings.IPAMConfig != nil {
+			ipv6 = &pop.Ip{
+				Address: endpointSettings.IPAMConfig.IPv6Address,
+			}
+		}
+	}
+
+	return &pop.Endpoint{
+		NetId:      endpointSettings.NetworkID,
+		EndpointId: endpointSettings.EndpointID,
+		Ipv4:       ipv4,
+		Ipv6:       ipv6,
+	}
+}
+
+func extractEndpoints(dNetMap map[string]*network.EndpointSettings) map[string]*pop.Endpoint {
+	endpoints := make(map[string]*pop.Endpoint)
+
+	for netname, endpointSettings := range dNetMap {
+		endpoints[netname] = extractEndpoint(endpointSettings)
+	}
+
+	return endpoints
 }
