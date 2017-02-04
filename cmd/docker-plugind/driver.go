@@ -121,7 +121,7 @@ func (d *driver) DeleteServerByIDAndWait(vimInstance *catalogue.VIMInstance, id 
 		"server-id": id,
 	}).Debug("received request")
 
-	return client.New(vimInstance).Delete(context.Background(), id)
+	return client.New(vimInstance).Delete(context.Background(), client.IDFilter(id))
 }
 
 func (d *driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnetExtID string) (bool, error) {
@@ -250,7 +250,7 @@ func (d *driver) NetworkByID(vimInstance *catalogue.VIMInstance, id string) (*ca
 		"tag": tag,
 	}).Debug("received request")
 
-	return client.New(vimInstance).Network(context.Background(), id)
+	return client.New(vimInstance).Network(context.Background(), client.IDFilter(id))
 }
 
 func (d *driver) Quota(vimInstance *catalogue.VIMInstance) (*catalogue.Quota, error) {
