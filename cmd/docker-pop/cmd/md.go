@@ -1,7 +1,6 @@
 package cmd
 
 import (
-
 	"github.com/spf13/cobra"
 )
 
@@ -9,7 +8,7 @@ import (
 var mdCmd = &cobra.Command{
 	Use:   "md",
 	Short: "Manages metadata",
-	Long: `Manages metadata for servers`,
+	Long:  `Manages metadata for servers`,
 }
 
 func init() {

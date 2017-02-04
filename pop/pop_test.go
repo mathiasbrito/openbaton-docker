@@ -59,10 +59,10 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatal(err)
 	}
 
-	err = cln.AddMetadata(context.Background(), client.IDFilter(srv.ExtID), map[string]string {
-		"key" : "value",
+	err = cln.AddMetadata(context.Background(), client.IDFilter(srv.ExtID), map[string]string{
+		"key": "value",
 	})
-	
+
 	if err != nil {
 		tst.Fatal(err)
 	}
@@ -85,10 +85,10 @@ func TestAddMetadataDel(tst *testing.T) {
 		tst.Fatalf("metadata failure, %s != value", val)
 	}
 
-	err = cln.AddMetadata(context.Background(), client.IDFilter(srv.ExtID), map[string]string {
-		"key" : "", // delete key
+	err = cln.AddMetadata(context.Background(), client.IDFilter(srv.ExtID), map[string]string{
+		"key": "", // delete key
 	})
-	
+
 	if err != nil {
 		tst.Fatal(err)
 	}

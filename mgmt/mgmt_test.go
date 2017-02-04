@@ -144,7 +144,7 @@ func TestAll(t *testing.T) {
 	t.Logf("recv id: %s", <-r)
 
 	if err := c.AddMetadata(testID, map[string]string{
-		"key": "value",
+		"key":  "value",
 		"key2": "value2",
 	}); err != nil {
 		t.Fatal(err)

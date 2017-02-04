@@ -48,18 +48,18 @@ func newHandler(c creds.Credentials) handler {
 	return handler{client.Client{Credentials: c}}
 }
 
-func (h handler) AddMetadata(id string, entries map[string]string) error {
-	return h.cln.AddMetadata(context.Background(), client.IDFilter(id), entries)
+func (h handler) AddMetadata(name string, entries map[string]string) error {
+	return h.cln.AddMetadata(context.Background(), client.NameFilter(name), entries)
 }
 
-// Check checks on the pop if the Server with the given ID exists. 
-func (h handler) Check(id string) (*catalogue.Server, error) {
-	return h.cln.Server(context.Background(), client.IDFilter(id))
+// Check checks on the pop if the Server with the given name exists.
+func (h handler) Check(name string) (*catalogue.Server, error) {
+	return h.cln.Server(context.Background(), client.NameFilter(name))
 }
 
 // Start starts the given server.
-func (h handler) Start(id string) error {
-	_, err := h.cln.Start(context.Background(), client.IDFilter(id))
+func (h handler) Start(name string) error {
+	_, err := h.cln.Start(context.Background(), client.NameFilter(name))
 
 	return err
 }

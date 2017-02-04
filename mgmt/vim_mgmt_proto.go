@@ -9,7 +9,7 @@ import (
 
 type (
 	addMetadataParams struct {
-		ID string
+		ID      string
 		Entries map[string]string
 	}
 	checkParams string
@@ -18,8 +18,8 @@ type (
 
 var (
 	fnAddMetadata = "add_metadata"
-	fnCheck = "check"
-	fnStart = "start"
+	fnCheck       = "check"
+	fnStart       = "start"
 )
 
 const (
@@ -27,10 +27,10 @@ const (
 	DefaultTimeout = vnfmAMQP.DefaultTimeout
 
 	// MgmtExchange is the default exchange to be used.
-	MgmtExchange   = vnfmAMQP.ExchangeDefault
+	MgmtExchange = vnfmAMQP.ExchangeDefault
 )
 
-// Due to a bug with json.RawMessage, Go versions before 1.8 do not show the correct behaviour 
+// Due to a bug with json.RawMessage, Go versions before 1.8 do not show the correct behaviour
 // while serializing/deserializing this structure.
 // Please use Go version 1.8 or higher.
 

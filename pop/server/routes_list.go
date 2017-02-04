@@ -17,14 +17,14 @@ var (
 		Id:   "docker-flavour-id",
 		Name: "docker.container",
 	}
-	
-	flavours = map[string]*pop.Flavour {
+
+	flavours = map[string]*pop.Flavour{
 		dockerFlavour.Id: dockerFlavour,
 	}
 
-	flavourNames = map[string]string {
+	flavourNames = map[string]string{
 		dockerFlavour.Name: dockerFlavour.Id,
-	}	
+	}
 )
 
 // Container fetches created or running containers from Docker, applying the given filter.
@@ -133,7 +133,7 @@ func (svc *service) getContainerInfos(ctx context.Context) (*pop.ContainerList, 
 	return &pop.ContainerList{List: conts}, nil
 }
 
-// getFlavourInfos is defined as a method for coherence with the other functions, 
+// getFlavourInfos is defined as a method for coherence with the other functions,
 // but it's unnecessary.
 func (svc *service) getFlavourInfos(context.Context) (*pop.FlavourList, error) {
 	list := make([]*pop.Flavour, 0, len(flavours))
@@ -190,24 +190,24 @@ func (svc *service) getSingleContainerInfo(_ context.Context, filter *pop.Filter
 }
 
 func (*service) getSingleFlavourInfo(_ context.Context, filter *pop.Filter) (*pop.Flavour, error) {
-		id := filter.GetId() // will return "" if not set
+	id := filter.GetId() // will return "" if not set
 
-		if name := filter.GetName(); name != "" {
-			id = flavourNames[name] // will return "" if not found
-		}
+	if name := filter.GetName(); name != "" {
+		id = flavourNames[name] // will return "" if not found
+	}
 
-		fl := flavours[id] // will return nil if not found
+	fl := flavours[id] // will return nil if not found
 
-		if fl == nil {
-			return nil, ErrNoSuchFlavour
-		}
+	if fl == nil {
+		return nil, ErrNoSuchFlavour
+	}
 
-		return fl, nil
+	return fl, nil
 }
 
 func (svc *service) getSingleImageInfo(ctx context.Context, filter *pop.Filter) (*pop.Image, error) {
 	query := filter.GetName()
-	
+
 	if id := filter.GetId(); id != "" {
 		query = id // prioritise IDs
 	}
@@ -233,7 +233,7 @@ func (svc *service) getSingleImageInfo(ctx context.Context, filter *pop.Filter) 
 
 func (svc *service) getSingleNetworkInfo(ctx context.Context, filter *pop.Filter) (*pop.Network, error) {
 	query := filter.GetName()
-	
+
 	if id := filter.GetId(); id != "" {
 		query = id // prioritise IDs
 	}

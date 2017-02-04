@@ -10,7 +10,7 @@ import (
 var serversCmd = &cobra.Command{
 	Use:   "servers",
 	Short: "Prints servers",
-	Long:  `Prints a list of all the servers available on the server.
+	Long: `Prints a list of all the servers available on the server.
 	
 You can also specify a filter to query for a single server.`,
 	Run: func(cmd *cobra.Command, args []string) {

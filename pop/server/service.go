@@ -62,16 +62,16 @@ func (pcont *svcCont) Md() metadata {
 // concrete service
 type service struct {
 	sessionManager
-	users    Users
-	name     string
-	cln      *client.Client
-	conts    map[string]*svcCont
+	users Users
+	name  string
+	cln   *client.Client
+	conts map[string]*svcCont
 
 	// names is a map of name -> id for conts;
 	// this allows fast matching of the id from the name
 
-	names	 map[string]string
-	
+	names map[string]string
+
 	contsMux sync.RWMutex
 	quitChan chan struct{}
 }
@@ -90,7 +90,7 @@ func newService(cfg Config) (*service, error) {
 		},
 		users:    cfg.Users,
 		conts:    make(map[string]*svcCont),
-		names:	  make(map[string]string),
+		names:    make(map[string]string),
 		quitChan: make(chan struct{}),
 	}
 

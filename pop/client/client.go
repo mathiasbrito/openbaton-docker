@@ -54,7 +54,7 @@ func (cln *Client) FetchMetadata(ctx context.Context, f Filter) (md map[string]s
 		} else {
 			md = map[string]string{}
 		}
-		
+
 		return nil
 	})
 
@@ -94,7 +94,7 @@ func (cln *Client) stub() (pop.PopClient, error) {
 }
 
 // Filter represents a filter type to be applied during a server query.
-type Filter interface{
+type Filter interface {
 	isFilterType() // dummy method to force users to use the filters below
 }
 
@@ -112,7 +112,7 @@ func filter(cf Filter) *pop.Filter {
 	filter := &pop.Filter{}
 
 	switch f := cf.(type) {
-	case IDFilter: 
+	case IDFilter:
 		filter.Options = &pop.Filter_Id{
 			Id: string(f),
 		}

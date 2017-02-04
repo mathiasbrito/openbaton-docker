@@ -10,7 +10,7 @@ import (
 var flavoursCmd = &cobra.Command{
 	Use:   "flavours",
 	Short: "Prints flavours",
-	Long:  `Prints a list of all the flavours available on the server.
+	Long: `Prints a list of all the flavours available on the server.
 	
 You can also specify a filter to query for a single flavour.`,
 	Run: func(cmd *cobra.Command, args []string) {

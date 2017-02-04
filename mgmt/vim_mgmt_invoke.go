@@ -39,10 +39,10 @@ type conn struct {
 
 func (c conn) AddMetadata(id string, entries map[string]string) error {
 	resp, err := c.request(fnAddMetadata, addMetadataParams{
-		ID: id,
+		ID:      id,
 		Entries: entries,
 	})
-	
+
 	if err != nil {
 		return err
 	}

@@ -46,8 +46,8 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 		return nil, fmt.Errorf("unsupported flavour %v, only %v is supported", cfg.FlavourId, dockerFlavour.Id)
 	}
 
-	// grab the lock BEFORE creating the descriptor - 
-	// if cfg specifies an already taken name, it's pointless to 
+	// grab the lock BEFORE creating the descriptor -
+	// if cfg specifies an already taken name, it's pointless to
 	// waste time with the daemon. To check this we need the lock to read from names.
 	svc.contsMux.Lock()
 	defer svc.contsMux.Unlock()
@@ -124,7 +124,7 @@ func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empt
 	if newMD.Filter == nil {
 		return nil, errors.New("empty filter")
 	}
-	
+
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 

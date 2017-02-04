@@ -10,7 +10,7 @@ import (
 var networksCmd = &cobra.Command{
 	Use:   "networks",
 	Short: "Prints networks",
-	Long:  `Prints a list of all the networks available on the server.
+	Long: `Prints a list of all the networks available on the server.
 	
 You can also specify a filter to query for a single network.`,
 	Run: func(cmd *cobra.Command, args []string) {

@@ -13,18 +13,18 @@ import (
 
 var (
 	// ErrInternal represents an internal failure.
-	ErrInternal        = errors.New("internal error")
+	ErrInternal = errors.New("internal error")
 
-	// ErrTooFewParams is returned when a request has too few parameters for the 
+	// ErrTooFewParams is returned when a request has too few parameters for the
 	// requested function.
-	ErrTooFewParams    = errors.New("not enough parameters for function")
+	ErrTooFewParams = errors.New("not enough parameters for function")
 
 	// ErrMalformedParams generically notifies the caller of malformed parameters.
 	ErrMalformedParams = errors.New("malformed parameters")
 )
 
-// Handler is an interface that represents the concrete functions to be remotely 
-// invoked. The Manager primary task is to deliver requests to the Handler and send its 
+// Handler is an interface that represents the concrete functions to be remotely
+// invoked. The Manager primary task is to deliver requests to the Handler and send its
 // responses to the caller.
 type Handler interface {
 	// AddMetadata sets the given entries as metadata for the server specified by the given

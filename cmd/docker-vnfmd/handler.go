@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"time"
@@ -86,21 +85,32 @@ func (h *handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, script
 func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 	dependency *catalogue.VNFRecordDependency) (*catalogue.VirtualNetworkFunctionRecord, error) {
 
-	buf := bytes.NewBufferString("")
+	md := make(map[string]string)
 
 	for key, value := range dependency.Parameters {
-		buf.WriteString(fmt.Sprintf("\t%s: %v", key, value.Parameters))
+		for pkey, pval := range value.Parameters {
+			md[fmt.Sprintf("%s-%s", key, pkey)] = pval
+		}
 	}
 
-	h.WithFields(log.Fields{
-		"tag":                        "docker-vnfm-handl-modify",
-		"vnfr-hb_version":            vnfr.HbVersion,
-		"vnfr-name":                  vnfr.Name,
-		"vnfr-dependency":            dependency,
-		"vnfr-dependency-parameters": buf.String(),
-	}).Info("modifying VNFR")
+	if h.Level >= log.DebugLevel {
+		h.WithFields(log.Fields{
+			"tag":             "docker-vnfm-handl-modify",
+			"vnfr-hb_version": vnfr.HbVersion,
+			"vnfr-name":       vnfr.Name,
+			"vnfr-dependency": dependency,
+			"md":              md,
+		}).Debug("modifying VNFR")
+	}
 
-	time.Sleep(3 * time.Second)
+	for _, vdu := range vnfr.VDUs {
+		for _, vnfcInstance := range vdu.VNFCInstances {
+			if err := h.mgmt(vnfcInstance.VIMID).AddMetadata(vnfcInstance.Hostname, md); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return vnfr, nil
 }
 
@@ -262,4 +272,18 @@ func (h *handl) UserData() string {
 
 func (h *handl) mgmt(vimID string) mgmt.VIMConnector {
 	return mgmt.NewConnector(vimID, h.acc)
+}
+
+func gatherMetadata(vnfcInstance *catalogue.VNFCInstance, les catalogue.LifecycleEvents, dep *catalogue.VNFRecordDependency) (md map[string]string) {
+	md = map[string]string{}
+
+	if dep.VNFCParameters == nil {
+		return
+	}
+
+	for _, le := range les {
+
+	}
+
+	return
 }
