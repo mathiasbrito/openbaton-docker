@@ -14,6 +14,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // sessionManager saves all the generated tokens.
@@ -57,14 +59,25 @@ func (sm *sessionManager) NewToken() (string, error) {
 // Login logs into the Pop. It should always be the first function called (to setup a token).
 // Remember that tokens are transient and not stored, so a new login is needed in case the service dies.
 func (svc *service) Login(ctx context.Context, creds *pop.Credentials) (*pop.Token, error) {
+	tag := util.FuncName()
+
 	if creds == nil {
 		return nil, pop.InvalidArgErr
 	}
+
+	svc.WithFields(log.Fields{
+		"tag":   tag,
+		"creds": *creds,
+	}).Debug("received login")
 
 	if user, found := svc.users[creds.Username]; found {
 		if bcrypt.CompareHashAndPassword(user.HashedPassword, []byte(creds.Password)) == nil {
 			tok, err := svc.NewToken()
 			if err != nil {
+				svc.WithError(err).WithFields(log.Fields{
+					"tag": tag,
+				}).Error("login error")
+
 				return nil, pop.InternalErr
 			}
 
@@ -77,9 +90,14 @@ func (svc *service) Login(ctx context.Context, creds *pop.Credentials) (*pop.Tok
 
 // Logout deletes the current session token from the sessionManager.
 func (svc *service) Logout(ctx context.Context, in *empty.Empty) (*empty.Empty, error) {
-	// getToken() will always return a valid token (it has been checked in unaryInterceptor()).
+	tag := util.FuncName()
+	// getTokens() will always return a valid token (it has been checked in unaryInterceptor()).
 
 	for _, token := range getTokens(ctx) {
+		svc.WithFields(log.Fields{
+			"tag":   tag,
+			"token": token,
+		}).Debug("logging out")
 		svc.DeleteToken(token)
 	}
 

@@ -98,7 +98,7 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 			"tag":             "docker-vnfm-handl-modify",
 			"vnfr-hb_version": vnfr.HbVersion,
 			"vnfr-name":       vnfr.Name,
-			"vnfr-dependency": dependency,
+			"vnfr-dependency-params": fmt.Sprintf("%#v", dependency.Parameters),
 			"md":              md,
 		}).Debug("modifying VNFR")
 	}

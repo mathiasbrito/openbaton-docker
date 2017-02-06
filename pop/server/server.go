@@ -6,10 +6,13 @@ import (
 	"google.golang.org/grpc"
 
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // Server represents the PoP service.
 type Server struct {
+	*log.Logger
 	Config   Config
 	Listener net.Listener
 
@@ -23,13 +26,24 @@ func New() (*Server, error) {
 		return nil, err
 	}
 
+	l := log.New()
+	l.Level = cfg.LogLevel
+
 	return &Server{
+		Logger: l,
 		Config: cfg,
 	}, nil
 }
 
 // Close shuts down the Server.
 func (s *Server) Close() error {
+	tag := util.FuncName()
+
+	s.WithFields(log.Fields{
+		"tag":      tag,
+		"pop-name": s.Config.PopName,
+	}).Info("stopping server")
+
 	err1 := s.svc.close()
 	err2 := s.Listener.Close()
 
@@ -47,7 +61,12 @@ func (s *Server) Close() error {
 
 // Serve spawns the service.
 func (s *Server) Serve() error {
-	//log.WithField("cfg", s.Config).Info("starting docker-popd")
+	tag := util.FuncName()
+
+	s.WithFields(log.Fields{
+		"tag":      tag,
+		"pop-name": s.Config.PopName,
+	}).Info("starting server")
 
 	proto := s.Config.Proto
 	if proto == "" {
@@ -66,7 +85,7 @@ func (s *Server) Serve() error {
 
 	s.Listener = lis
 
-	s.svc, err = newService(s.Config)
+	s.svc, err = newService(s.Config, s.Logger)
 	if err != nil {
 		return err
 	}
@@ -77,6 +96,11 @@ func (s *Server) Serve() error {
 	)
 
 	pop.RegisterPopServer(srv, s.svc)
+
+	s.WithFields(log.Fields{
+		"tag":      tag,
+		"pop-name": s.Config.PopName,
+	}).Info("launching gRPC server")
 
 	if err := srv.Serve(s.Listener); err != nil {
 		return err

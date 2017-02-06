@@ -11,6 +11,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
 )
 
 //go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
@@ -61,6 +63,7 @@ func (pcont *svcCont) Md() metadata {
 
 // concrete service
 type service struct {
+	*log.Logger
 	sessionManager
 	users Users
 	name  string
@@ -76,13 +79,21 @@ type service struct {
 	quitChan chan struct{}
 }
 
-func newService(cfg Config) (*service, error) {
+func newService(cfg Config, l *log.Logger) (*service, error) {
+	tag := util.FuncName()
+
+	l.WithFields(log.Fields{
+		"tag": tag,
+	}).Debug("creating route service")
+
 	cln, err := dialDocker(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	srv := &service{
+		Logger: l,
+
 		name: cfg.PopName,
 		cln:  cln,
 		sessionManager: sessionManager{
@@ -105,6 +116,14 @@ func newService(cfg Config) (*service, error) {
 }
 
 func (svc *service) Info(context.Context, *empty.Empty) (*pop.Infos, error) {
+	tag := util.FuncName()
+	op := "Info"
+
+	svc.WithFields(log.Fields{
+		"tag": tag,
+		"op":  op,
+	}).Debug("infos requested")
+
 	return &pop.Infos{
 		Name:      svc.name,
 		Type:      "docker",
@@ -113,11 +132,23 @@ func (svc *service) Info(context.Context, *empty.Empty) (*pop.Infos, error) {
 }
 
 func (svc *service) checkDocker() (err error) {
+	tag := util.FuncName()
+
+	svc.WithFields(log.Fields{
+		"tag": tag,
+	}).Debug("checking Docker daemon")
+
 	_, err = svc.cln.Ping(context.Background())
 	return
 }
 
 func (svc *service) close() error {
+	tag := util.FuncName()
+
+	svc.WithFields(log.Fields{
+		"tag": tag,
+	}).Debug("stopping route service")
+
 	svc.quitChan <- struct{}{}
 
 	select {

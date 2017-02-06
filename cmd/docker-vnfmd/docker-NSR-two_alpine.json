@@ -1,6 +1,6 @@
 {
-  "name":"NSD two linked Alpine",
-  "vendor":"FOKUS",
+  "name":"docker-test-NS-twoalpine",
+  "vendor":"mcilloni",
   "version":"1.0",
   "vld":[
     {
@@ -10,7 +10,7 @@
   "vnfd":[
     {
       "name":"alpine-client",
-      "vendor":"FOKUS",
+      "vendor":"mcilloni",
       "version":"1.0",
       "lifecycle_event":[
         {
@@ -29,7 +29,7 @@
       "vdu":[
         {
           "vm_image":[
-            "alpine:latest"
+            "mcilloni/alpine-nop:latest"
           ],
           "scale_in_out":1,
           "vnfc":[
@@ -60,7 +60,7 @@
     },
     {
       "name":"alpine-server",
-      "vendor":"FOKUS",
+      "vendor":"mcilloni",
       "version":"1.0",
       "lifecycle_event":[
         {
@@ -79,7 +79,7 @@
       "vdu":[
         {
           "vm_image":[
-            "alpine:latest"
+            "mcilloni/alpine-nop:latest"
           ],
           "scale_in_out":1,
           "vnfc":[

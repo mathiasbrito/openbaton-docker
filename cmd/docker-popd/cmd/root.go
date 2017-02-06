@@ -12,6 +12,7 @@ import (
 )
 
 var cfgFile string
+var verbose bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -27,6 +28,10 @@ var RootCmd = &cobra.Command{
 		srv, err := server.New()
 		if err != nil {
 			log.WithError(err).Fatal("failure while launching popd")
+		}
+
+		if !verbose {
+			srv.Level = log.WarnLevel
 		}
 
 		if err := srv.Serve(); err != nil {
@@ -68,6 +73,7 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "cfg", "", "config file (default is 'docker-popd.toml')")
+	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "output everything on the logs")
 }
 
 func loadConfig() error {

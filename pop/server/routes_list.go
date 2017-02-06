@@ -9,6 +9,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // dummy flavours
@@ -29,10 +31,25 @@ var (
 
 // Container fetches created or running containers from Docker, applying the given filter.
 func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.ContainerList, error) {
+	tag := util.FuncName()
+	op := "Containers"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": *filter,
+	}).Debug("fetching containers")
+
 	// filter for a container with the given ID
 	if filter.Options != nil {
 		cont, err := svc.getSingleContainerInfo(ctx, filter)
 		if err != nil {
+			svc.WithError(err).WithFields(log.Fields{
+				"tag":    tag,
+				"op":     op,
+				"filter": *filter,
+			}).Error("fetching single container failed")
+
 			return nil, err
 		}
 
@@ -48,9 +65,24 @@ func (svc *service) Containers(ctx context.Context, filter *pop.Filter) (*pop.Co
 // OpenStack/Amazon/... world, and so the NFVO expects one of them.
 // We're letting the PoP declare fake flavours, giving an appearance of continuity with the rest of the NFV world.
 func (svc *service) Flavours(ctx context.Context, filter *pop.Filter) (*pop.FlavourList, error) {
+	tag := util.FuncName()
+	op := "Flavours"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": *filter,
+	}).Debug("fetching flavours")
+
 	if filter.Options != nil {
 		fl, err := svc.getSingleFlavourInfo(ctx, filter)
 		if err != nil {
+			svc.WithError(err).WithFields(log.Fields{
+				"tag":    tag,
+				"op":     op,
+				"filter": *filter,
+			}).Error("fetching single flavour failed")
+
 			return nil, err
 		}
 
@@ -64,10 +96,25 @@ func (svc *service) Flavours(ctx context.Context, filter *pop.Filter) (*pop.Flav
 
 // Images retrieves and returns the available images on the Docker daemon.
 func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageList, error) {
+	tag := util.FuncName()
+	op := "Images"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": *filter,
+	}).Debug("fetching images")
+
 	// filter for an image with the given ID or name
 	if filter.Options != nil {
 		img, err := svc.getSingleImageInfo(ctx, filter)
 		if err != nil {
+			svc.WithError(err).WithFields(log.Fields{
+				"tag":    tag,
+				"op":     op,
+				"filter": *filter,
+			}).Error("fetching single images failed")
+
 			return nil, err
 		}
 
@@ -81,10 +128,25 @@ func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageL
 
 // Networks retrieves the current daemon networks.
 func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.NetworkList, error) {
+	tag := util.FuncName()
+	op := "Images"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": *filter,
+	}).Debug("fetching networks")
+
 	// filter for a network with the given ID or name.
 	if filter.Options != nil {
 		netw, err := svc.getSingleNetworkInfo(ctx, filter)
 		if err != nil {
+			svc.WithError(err).WithFields(log.Fields{
+				"tag":    tag,
+				"op":     op,
+				"filter": *filter,
+			}).Error("fetching single networks failed")
+
 			return nil, err
 		}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/toml" // because it implements TOML Marshalling
 	"github.com/docker/docker/client"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 // DefaultConfig is a sane template config for a local server.
@@ -21,6 +22,7 @@ var (
 		Netaddr:     pop.DefaultListenAddress,
 		Users:       Users{},
 		DockerdHost: client.DefaultDockerHost,
+		LogLevel:    log.DebugLevel,
 	}
 
 	ErrMalformedAuthVar = errors.New("invalid POPD_AUTH variable (must be formatted like `user:pass,user2,pass2,[...]`)")
@@ -33,6 +35,7 @@ type Config struct {
 	Netaddr     string
 	Users       Users
 	DockerdHost string
+	LogLevel    log.Level
 	// Add TLS here
 }
 

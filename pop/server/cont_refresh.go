@@ -7,11 +7,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	// monitoringDelay represents the default time between two monitoring checks.
-	monitoringDelay = 5 * time.Second
+	monitoringDelay = 30 * time.Second
 )
 
 // fetchDockerContainers fetches the ID and state of all the available Docker containers.
@@ -33,9 +35,18 @@ func (svc *service) fetchDockerContainers() (map[string]pop.Container_Status, er
 // refreshLoop implements a best-effort service that periodically monitors
 // and refreshes the status of the containers based on their backing Docker containers.
 func (svc *service) refreshLoop() {
+	tag := util.FuncName()
+
+	svc.WithFields(log.Fields{
+		"tag": tag,
+	}).Debug("refresh loop spawned")
+
 	for {
 		select {
 		case <-svc.quitChan:
+			svc.WithFields(log.Fields{
+				"tag": tag,
+			}).Debug("refresh loop stopping")
 			return
 
 		case <-time.After(monitoringDelay):
@@ -45,6 +56,12 @@ func (svc *service) refreshLoop() {
 }
 
 func (svc *service) refreshStatuses() error {
+	tag := util.FuncName()
+
+	svc.WithFields(log.Fields{
+		"tag": tag,
+	}).Debug("refreshing containers")
+
 	// get the lock
 	svc.contsMux.Lock()
 	defer svc.contsMux.Unlock()
@@ -52,6 +69,9 @@ func (svc *service) refreshStatuses() error {
 	// fetch Docker containers and their states
 	statuses, err := svc.fetchDockerContainers()
 	if err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag": tag,
+		}).Error("error while updating containers")
 		return err
 	}
 
@@ -64,9 +84,16 @@ func (svc *service) refreshStatuses() error {
 // updateStatuses is executed under the container list lock, and updates the state
 // of a container, matching with its Docker correspective container
 func (svc *service) updateStatuses(states map[string]pop.Container_Status) {
+	tag := util.FuncName()
+
 	for _, cont := range svc.conts {
 		// only running Pop containers have a Docker container
 		if cont.DockerID != "" && cont.Status == pop.Container_RUNNING {
+			svc.WithFields(log.Fields{
+				"tag":            tag,
+				"container-name": cont.Names[0],
+			}).Debug("updating container")
+
 			state, found := states[cont.DockerID]
 			// The Docker container may have been shut down by any reason. In this case,
 			// mark the Pop container as FAILED.

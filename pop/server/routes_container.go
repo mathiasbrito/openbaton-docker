@@ -18,7 +18,8 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
-	"github.com/satori/go.uuid"
+	"github.com/openbaton/go-openbaton/util"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -42,7 +43,22 @@ var (
 
 // Create creates a new container as described by the given config.
 func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.Container, error) {
+	tag := util.FuncName()
+	op := "Create"
+
+	svc.WithFields(log.Fields{
+		"tag":  tag,
+		"op":   op,
+		"name": cfg.Name,
+	}).Debug("attempting to create container")
+
 	if cfg.FlavourId != "" && cfg.FlavourId != dockerFlavour.Id {
+		svc.WithFields(log.Fields{
+			"tag":  tag,
+			"op":   op,
+			"name": cfg.Name,
+		}).Error("cannot create container")
+
 		return nil, fmt.Errorf("unsupported flavour %v, only %v is supported", cfg.FlavourId, dockerFlavour.Id)
 	}
 
@@ -51,6 +67,12 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 	// waste time with the daemon. To check this we need the lock to read from names.
 	svc.contsMux.Lock()
 	defer svc.contsMux.Unlock()
+
+	svc.WithFields(log.Fields{
+		"tag":  tag,
+		"op":   op,
+		"name": cfg.Name,
+	}).Debug("list lock obtained")
 
 	if _, found := svc.names[cfg.Name]; found {
 		return nil, grpc.Errorf(codes.AlreadyExists, "container name %s already taken", cfg.Name)
@@ -67,7 +89,7 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 	// check if the name is al
 
 	for {
-		cont.Id = uuid.NewV4().String()
+		cont.Id = util.GenerateID()
 
 		if _, found := svc.conts[cont.Id]; !found {
 			break
@@ -83,17 +105,45 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 	// cont.Names has always at least an element
 	svc.names[cont.Names[0]] = cont.Id
 
+	svc.WithFields(log.Fields{
+		"tag":        tag,
+		"op":         op,
+		"cont-id":    cont.Id,
+		"cont-names": cont.Names,
+	}).Debug("created container")
+
 	return cont, nil
 }
 
 // Delete removes the containers identified by the given filter, stopping it before if necessary.
 func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empty, error) {
+	tag := util.FuncName()
+	op := "Delete"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": filter.Options != nil,
+	}).Debug("attempting to delete a container")
+
 	// get the lock before editing the map
 	svc.contsMux.Lock()
 	defer svc.contsMux.Unlock()
 
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": filter.Options != nil,
+	}).Debug("list lock obtained")
+
 	pcont, err := svc.filterContainer(filter)
 	if err != nil {
+		svc.WithFields(log.Fields{
+			"tag":    tag,
+			"op":     op,
+			"filter": filter.Options != nil,
+		}).Error("container fetching failed")
+
 		return nil, err
 	}
 
@@ -102,9 +152,26 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 	defer pcont.mux.Unlock()
 
 	if pcont.Status == pop.Container_RUNNING {
+		svc.WithFields(log.Fields{
+			"tag":  tag,
+			"op":   op,
+			"cont": pcont.Names,
+		}).Debug("trying to stop container")
+
 		if err := svc.stopContainer(ctx, pcont); err != nil && err != ErrAlreadyStopped {
+			svc.WithFields(log.Fields{
+				"tag":  tag,
+				"op":   op,
+				"cont": pcont.Names,
+			}).Error("container stopping failed")
 			return nil, err
 		}
+
+		svc.WithFields(log.Fields{
+			"tag":  tag,
+			"op":   op,
+			"cont": pcont.Names,
+		}).Debug("container stopped")
 	}
 
 	// deletes the container from the container list and from names
@@ -114,6 +181,13 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 	// if someone still holds a reference to this container
 	pcont.Status = pop.Container_UNAVAILABLE
 	pcont.ExtendedStatus = "this container has been deleted"
+
+	svc.WithFields(log.Fields{
+		"tag":  tag,
+		"op":   op,
+		"cont": pcont.Names,
+	}).Debug("trying to stop container")
+
 	return &empty.Empty{}, nil
 }
 
@@ -121,6 +195,15 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 // An empty value for a key means that the key will be removed from the metadata.
 // Metadata will return an error if the container has already been spawned.
 func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empty.Empty, error) {
+	tag := util.FuncName()
+	op := "Metadata"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": *newMD.Filter,
+	}).Debug("attempting to add metadata to a container")
+
 	if newMD.Filter == nil {
 		return nil, errors.New("empty filter")
 	}
@@ -128,23 +211,58 @@ func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empt
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": *newMD.Filter,
+	}).Debug("list rlock obtained")
+
 	pcont, err := svc.filterContainer(newMD.Filter)
 	if err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag":    tag,
+			"op":     op,
+			"filter": *newMD.Filter,
+		}).Error("cannot retrieve container")
+
 		return nil, err
 	}
 
 	pcont.mux.Lock()
 	defer pcont.mux.Unlock()
 
+	svc.WithFields(log.Fields{
+		"tag":        tag,
+		"op":         op,
+		"cont-names": pcont.Names,
+	}).Debug("container lock obtained")
+
 	if pcont.Status != pop.Container_CREATED {
+		svc.WithFields(log.Fields{
+			"tag":        tag,
+			"op":         op,
+			"cont-names": pcont.Names,
+		}).Error("cannot set metadata, container has already started")
+
 		return nil, ErrAlreadyStarted
 	}
 
 	if newMD.Md == nil || newMD.Md.Entries == nil {
+		svc.WithFields(log.Fields{
+			"tag":        tag,
+			"op":         op,
+			"cont-names": pcont.Names,
+		}).Debug("container lock obtained")
 		return nil, ErrInvalidArgument
 	}
 
 	pcont.Md().Merge(newMD.Md.Entries)
+
+	svc.WithFields(log.Fields{
+		"tag":        tag,
+		"op":         op,
+		"cont-names": pcont.Names,
+	}).Debug("container lock obtained")
 
 	return &empty.Empty{}, nil
 }
@@ -152,34 +270,80 @@ func (svc *service) Metadata(ctx context.Context, newMD *pop.NewMetadata) (*empt
 // Start starts the container identified by the given filter, by creating and launching a Docker
 // container with its metadata as environment variables.
 func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Container, error) {
+	tag := util.FuncName()
+	op := "Start"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": filter.Options != nil,
+	}).Debug("attempting to start a container")
+
 	// In case a container is quickly created and then started, this avoids races.
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": filter.Options != nil,
+	}).Debug("list lock obtained")
+
 	pcont, err := svc.filterContainer(filter)
 	if err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag":    tag,
+			"op":     op,
+			"filter": filter.Options != nil,
+		}).Error("cannot find container")
+
 		return nil, err
 	}
 
 	pcont.mux.Lock()
 	defer pcont.mux.Unlock()
 
+	svc.WithFields(log.Fields{
+		"tag":        tag,
+		"op":         op,
+		"cont-names": pcont.Names,
+	}).Debug("container lock obtained")
+
 	// Ensures the container is launched once and only once.
 	switch pcont.Status {
 	case pop.Container_EXITED:
 		fallthrough
 	case pop.Container_RUNNING:
+		svc.WithFields(log.Fields{
+			"tag":        tag,
+			"op":         op,
+			"cont-names": pcont.Names,
+		}).Error("cannot start a container already started")
+
 		return nil, ErrAlreadyStarted
 
 	case pop.Container_CREATED:
 		// go through
 
 	default:
+		svc.WithFields(log.Fields{
+			"tag":         tag,
+			"op":          op,
+			"cont-names":  pcont.Names,
+			"cont-status": pcont.Status.String(),
+		}).Error("invalid status")
+
 		return nil, ErrInvalidState
 	}
 
 	ccb, err := svc.createContainer(ctx, pcont)
 	if err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag":        tag,
+			"op":         op,
+			"cont-names": pcont.Names,
+		}).Error("cannot create container")
+
 		pcont.Status = pop.Container_FAILED
 		pcont.ExtendedStatus = fmt.Sprintf("error while creating: %v", err)
 		return nil, err
@@ -190,12 +354,24 @@ func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Contain
 	}
 
 	if err := svc.cln.ContainerStart(ctx, ccb.ID, types.ContainerStartOptions{}); err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag":        tag,
+			"op":         op,
+			"cont-names": pcont.Names,
+		}).Error("cannot start container")
+
 		pcont.Status = pop.Container_FAILED
 		pcont.ExtendedStatus = fmt.Sprintf("error while starting: %v", err)
 		return nil, err
 	}
 
 	if err := svc.updateContainer(ctx, pcont, ccb.ID); err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag":        tag,
+			"op":         op,
+			"cont-names": pcont.Names,
+		}).Warn("cannot update container")
+
 		pcont.ExtendedStatus = "warning: update of this container failed"
 		return nil, err
 	}
@@ -208,12 +384,33 @@ func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Contain
 
 // Stop stops the container identified by the given filter.
 func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty, error) {
+	tag := util.FuncName()
+	op := "Stop"
+
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": filter.Options != nil,
+	}).Debug("attempting to stop a container")
+
 	// In case a container is quickly created and then stopped, this avoids races.
 	svc.contsMux.RLock()
 	defer svc.contsMux.RUnlock()
 
+	svc.WithFields(log.Fields{
+		"tag":    tag,
+		"op":     op,
+		"filter": filter.Options != nil,
+	}).Debug("list rlock obtained")
+
 	pcont, err := svc.filterContainer(filter)
 	if err != nil {
+		svc.WithError(err).WithFields(log.Fields{
+			"tag":    tag,
+			"op":     op,
+			"filter": filter.Options != nil,
+		}).Error("cannot find container")
+
 		return nil, err
 	}
 
@@ -221,23 +418,54 @@ func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty,
 	pcont.mux.Lock()
 	defer pcont.mux.Unlock()
 
+	svc.WithFields(log.Fields{
+		"tag":        tag,
+		"op":         op,
+		"cont-names": pcont.Names,
+	}).Debug("list rlock obtained")
+
 	switch pcont.Status {
 	case pop.Container_EXITED:
 		fallthrough
 	case pop.Container_FAILED:
+		svc.WithFields(log.Fields{
+			"tag":    tag,
+			"op":     op,
+			"filter": filter.Options != nil,
+		}).Error("cannot stop a stopped container")
+
 		return nil, ErrAlreadyStopped
 
 	case pop.Container_RUNNING:
 		// go through
 
 	case pop.Container_CREATED:
+		svc.WithFields(log.Fields{
+			"tag":    tag,
+			"op":     op,
+			"filter": filter.Options != nil,
+		}).Error("container was never started")
+
 		return nil, ErrNotStarted
 
 	default:
+		svc.WithFields(log.Fields{
+			"tag":         tag,
+			"op":          op,
+			"cont-names":  pcont.Names,
+			"cont-status": pcont.Status.String(),
+		}).Error("invalid status")
+
 		return nil, ErrInvalidState
 	}
 
 	// The switch above ensures the container is stopped once and only once.
+
+	svc.WithFields(log.Fields{
+		"tag":        tag,
+		"op":         op,
+		"cont-names": pcont.Names,
+	}).Debug("container stopped")
 
 	return &empty.Empty{}, svc.stopContainer(ctx, pcont)
 }
@@ -311,7 +539,7 @@ func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (contai
 
 // stopContainer stops a container; this function expects to hold the lock on the given pcont.
 func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
-	timeout := time.Minute
+	timeout := 5 * time.Second
 
 	if deadline, ok := ctx.Deadline(); ok {
 		timeout = deadline.Sub(time.Now())
