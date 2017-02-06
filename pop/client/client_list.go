@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mcilloni/go-openbaton/catalogue"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/catalogue"
 )
 
 // Flavour returns the flavour having the given filter as an OpenBaton DeploymentFlavour.
@@ -160,9 +160,9 @@ func (cln *Client) fetchImages(ctx context.Context, f Filter) ([]*catalogue.NFVI
 
 	nfvImgs := cln.makeImages(imgs)
 
-	// if we are filtering for a name, than 
+	// if we are filtering for a name, than
 	// we need to get just a single image and set the right name to it.
-	// if we are filtering for an ID, then just return one of them, they just have 
+	// if we are filtering for an ID, then just return one of them, they just have
 	// different names.
 	switch rf := f.(type) {
 	case NameFilter:
@@ -171,7 +171,7 @@ func (cln *Client) fetchImages(ctx context.Context, f Filter) ([]*catalogue.NFVI
 
 	case IDFilter:
 		return nfvImgs[:1], nil
-	
+
 	default:
 		return nfvImgs, nil
 	}
@@ -379,4 +379,3 @@ func (cln *Client) makeServers(ctx context.Context, conts []*pop.Container) ([]*
 
 	return servs, nil
 }
-

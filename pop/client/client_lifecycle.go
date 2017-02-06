@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/mcilloni/go-openbaton/catalogue"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/catalogue"
 )
 
 // AddMetadata adds metadata keys to a not yet started container.

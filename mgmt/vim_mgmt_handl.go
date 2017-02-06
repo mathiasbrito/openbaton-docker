@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mcilloni/go-openbaton/catalogue"
-	"github.com/mcilloni/go-openbaton/util"
+	"github.com/openbaton/go-openbaton/catalogue"
+	"github.com/openbaton/go-openbaton/util"
 	"github.com/streadway/amqp"
 )
 

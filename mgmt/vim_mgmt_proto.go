@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	vnfmAMQP "github.com/mcilloni/go-openbaton/vnfm/amqp"
+	vnfmAMQP "github.com/openbaton/go-openbaton/vnfm/amqp"
 )
 
 type (

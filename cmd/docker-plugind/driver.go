@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/mcilloni/go-openbaton/catalogue"
-	"github.com/mcilloni/go-openbaton/util"
 	"github.com/mcilloni/openbaton-docker/mgmt"
 	"github.com/mcilloni/openbaton-docker/pop/client"
+	"github.com/openbaton/go-openbaton/catalogue"
+	"github.com/openbaton/go-openbaton/util"
 	log "github.com/sirupsen/logrus"
 )
 

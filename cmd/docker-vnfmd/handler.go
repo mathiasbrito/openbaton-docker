@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/openbaton-docker/mgmt"
+	"github.com/openbaton/go-openbaton/catalogue"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -273,4 +273,3 @@ func (h *handl) UserData() string {
 func (h *handl) mgmt(vimID string) mgmt.VIMConnector {
 	return mgmt.NewConnector(vimID, h.acc)
 }
-

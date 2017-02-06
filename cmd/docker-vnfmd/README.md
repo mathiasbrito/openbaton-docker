@@ -60,6 +60,6 @@ Apache License, Version 2.0. See LICENSE for further details.
 [openbaton-doc]: http://openbaton.org/documentation
 [openbaton-github]: http://github.org/openbaton
 [sample-conf]: https://raw.githubusercontent.com/mcilloni/openbaton-docker/master/cmd/docker-vnfmd/config.toml
-[go-openbaton]: http://github.com/mcilloni/go-openbaton
+[go-openbaton]: http://github.com/openbaton/go-openbaton
 [docker-popd]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-popd
 [docker-plugind]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-plugind

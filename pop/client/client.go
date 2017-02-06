@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/mcilloni/go-openbaton/catalogue"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/openbaton/go-openbaton/catalogue"
 )
 
 //go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
