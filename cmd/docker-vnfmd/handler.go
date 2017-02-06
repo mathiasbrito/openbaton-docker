@@ -12,7 +12,7 @@ import (
 
 type handl struct {
 	*log.Logger
-	acc mgmt.VNFMChannelAccessor
+	acc mgmt.AMQPChannelAccessor
 }
 
 // ActionForResume uses the given VNFR and VNFCInstance to return a valid

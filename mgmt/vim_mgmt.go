@@ -1,11 +1,16 @@
 package mgmt
 
 import (
+	"errors"
 	"time"
 
 	"github.com/openbaton/go-openbaton/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+)
+
+var (
+	ErrConnClosed = errors.New("connection has closed")
 )
 
 // AMQPChannelAccessor is a function type that represents a function that allows to access
@@ -31,7 +36,7 @@ func NewManager(
 	}
 
 	m := &manager{
-		accessor: accessor,
+		accessor: cachingAccessor(accessor),
 		l:        l,
 		handl:    h,
 		id:       makeID(vimname),
@@ -139,4 +144,44 @@ func (m *manager) setup() (cnl *amqp.Channel, deliveries <-chan amqp.Delivery, e
 	m.l.WithField("tag", tag).Debug("all set up")
 
 	return
+}
+
+// cachingAccessor wraps an AMQPChannelAccessor, offering caching and 
+// auto reacquiring of amqp.Channels.
+func cachingAccessor(acc AMQPChannelAccessor) AMQPChannelAccessor {
+	var cnl *amqp.Channel
+	var ok bool
+	var closed bool
+
+	// The Channel pointer will be captured by the closure, that will own it for its lifetime.
+	return func() (*amqp.Channel, error) {
+		if closed {
+			return nil, ErrConnClosed
+		}
+
+		// get a new channel
+		if !ok {
+			var err error
+			cnl, err = acc()
+			if err != nil {
+				return nil, err
+			}
+
+			ok = true
+
+			// heartbeat routine, that checks for channel termination and sets ok to false,
+			// forcing the retrieval of a new channel the next run this function is run
+			go func() {
+				err := <-cnl.NotifyClose(make(chan *amqp.Error))
+				if err != nil {
+					ok = false
+				} else {
+					// the connection has been shut down
+					closed = true
+				}
+			}()
+		}
+
+		return cnl, nil
+	}
 }

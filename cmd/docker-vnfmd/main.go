@@ -11,6 +11,7 @@ import (
 	_ "github.com/openbaton/go-openbaton/vnfm/amqp" // import needed to load the driver
 	"github.com/openbaton/go-openbaton/vnfm/config"
 	log "github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 var confPath = flag.String("cfg", "config.toml", "a TOML file to be loaded as config")
@@ -37,7 +38,19 @@ func main() {
 	l := svc.Logger()
 
 	h.Logger = l
-	h.acc = svc.ChannelAccessor()
+	h.acc = func() (*amqp.Channel, error) {
+		vcnl, err := svc.ChannelAccessor()()
+		if err != nil {
+			return nil, err
+		}
+
+		icnl, err := vcnl.Impl()
+		if err != nil {
+			return nil, err
+		}
+
+		return icnl.(*amqp.Channel), nil
+	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)

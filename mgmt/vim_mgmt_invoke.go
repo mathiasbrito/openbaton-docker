@@ -7,12 +7,8 @@ import (
 
 	"github.com/openbaton/go-openbaton/catalogue"
 	"github.com/openbaton/go-openbaton/util"
-	"github.com/openbaton/go-openbaton/vnfm/channel"
 	"github.com/streadway/amqp"
 )
-
-// VNFMChannelAccessor is a function type that allows to access a channel.Channel instance.
-type VNFMChannelAccessor func() (channel.Channel, error)
 
 // VIMConnector is a client for a remote VIM instance.
 // Its methods mirror those of Handler; invoking one of them
@@ -24,16 +20,16 @@ type VIMConnector interface {
 }
 
 // NewConnector creates a new Connector to the Manager for the given VIM instance.
-func NewConnector(vimname string, acc VNFMChannelAccessor) VIMConnector {
+func NewConnector(vimname string, acc AMQPChannelAccessor) VIMConnector {
 	return conn{
-		acc: acc,
+		acc: cachingAccessor(acc),
 		id:  makeID(vimname),
 	}
 }
 
 // concrete conn type.
 type conn struct {
-	acc VNFMChannelAccessor
+	acc AMQPChannelAccessor
 	id  string
 }
 
@@ -87,19 +83,9 @@ func (c conn) Start(id string) error {
 
 // exchange does an RPC call to the Manager.
 func (c conn) exchange(req []byte) ([]byte, error) {
-	cln, err := c.acc()
+	acnl, err := c.acc()
 	if err != nil {
 		return nil, err
-	}
-
-	cimpl, err := cln.Impl()
-	if err != nil {
-		return nil, err
-	}
-
-	acnl, ok := cimpl.(*amqp.Channel)
-	if !ok {
-		return nil, errors.New("invalid channel - only AMQP is supported")
 	}
 
 	// check if the wanted queue exists.
