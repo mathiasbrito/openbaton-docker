@@ -70,6 +70,8 @@ type service struct {
 	cln   *client.Client
 	conts map[string]*svcCont
 
+	privNet svcNet
+
 	// names is a map of name -> id for conts;
 	// this allows fast matching of the id from the name
 
@@ -91,7 +93,7 @@ func newService(cfg Config, l *log.Logger) (*service, error) {
 		return nil, err
 	}
 
-	srv := &service{
+	svc := &service{
 		Logger: l,
 
 		name: cfg.PopName,
@@ -105,14 +107,28 @@ func newService(cfg Config, l *log.Logger) (*service, error) {
 		quitChan: make(chan struct{}),
 	}
 
-	if err := srv.checkDocker(); err != nil {
+	if err := svc.checkDocker(); err != nil {
 		return nil, fmt.Errorf("docker connection is broken: %v", err)
 	}
 
-	// spawn the monitoring loop
-	go srv.refreshLoop()
+	l.WithFields(log.Fields{
+		"tag": tag,
+	}).Debug("creating private network if not present...")
+	
+	if err := svc.initPrivateNetwork(); err != nil {
+		return nil, err
+	}
 
-	return srv, nil
+	l.WithFields(log.Fields{
+		"tag": tag,
+		"net-name": privateNetName,
+		"net-subnet": svc.privNet.net4,
+	}).Debug("obtained private network")
+
+	// spawn the monitoring loop
+	go svc.refreshLoop()
+
+	return svc, nil
 }
 
 func (svc *service) Info(context.Context, *empty.Empty) (*pop.Infos, error) {

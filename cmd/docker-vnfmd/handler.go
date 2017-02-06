@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -98,7 +99,7 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 			"tag":             "docker-vnfm-handl-modify",
 			"vnfr-hb_version": vnfr.HbVersion,
 			"vnfr-name":       vnfr.Name,
-			"vnfr-dependency-params": fmt.Sprintf("%#v", dependency.Parameters),
+			"vnfr-dependency": JSON(dependency),
 			"md":              md,
 		}).Debug("modifying VNFR")
 	}
@@ -272,4 +273,13 @@ func (h *handl) UserData() string {
 
 func (h *handl) mgmt(vimID string) mgmt.VIMConnector {
 	return mgmt.NewConnector(vimID, h.acc)
+}
+
+func JSON(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf("<<%v>>", err)
+	}
+
+	return string(b)
 }

@@ -38,13 +38,15 @@ func init() {
 	}
 
 	cfg = server.Config{
+		PopName: "test-pop",
 		Netaddr: laddr,
 		Users: server.Users{
 			user.Name: user,
 		},
+		LogLevel: log.ErrorLevel,
 	}
 
-	srv := &server.Server{Config: cfg}
+	srv := &server.Server{Config: cfg, Logger: log.StandardLogger()}
 
 	go func() {
 		if err := srv.Serve(); err != nil {

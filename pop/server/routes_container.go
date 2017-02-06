@@ -78,7 +78,7 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 		return nil, grpc.Errorf(codes.AlreadyExists, "container name %s already taken", cfg.Name)
 	}
 
-	cont, err := svc.checkConfig(ctx, cfg)
+	cont, err := svc.createPcont(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -470,30 +470,6 @@ func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty,
 	return &empty.Empty{}, svc.stopContainer(ctx, pcont)
 }
 
-func (svc *service) checkConfig(ctx context.Context, cfg *pop.ContainerConfig) (*pop.Container, error) {
-	if cfg.ImageId == "" {
-		return nil, errors.New("no image ID provided")
-	}
-
-	// check if the image exists
-	filter := &pop.Filter{Options: &pop.Filter_Id{Id: cfg.ImageId}}
-
-	if _, err := svc.getSingleImageInfo(ctx, filter); err != nil {
-		return nil, err
-	}
-
-	return &pop.Container{
-		Status:         pop.Container_CREATED,
-		ExtendedStatus: "container ready for instantiation",
-		Names:          []string{cfg.Name},
-		ImageId:        cfg.ImageId,
-		FlavourId:      cfg.FlavourId,
-		Created:        time.Now().Unix(),
-		Endpoints:      cfg.Endpoints,
-		Md:             &pop.Metadata{Entries: make(map[string]string)},
-	}, nil
-}
-
 func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (container.ContainerCreateCreatedBody, error) {
 	var dockerEndpoints map[string]*network.EndpointSettings
 
@@ -535,6 +511,43 @@ func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (contai
 		},
 		pcont.Names[0],
 	)
+}
+
+func (svc *service) createPcont(ctx context.Context, cfg *pop.ContainerConfig) (*pop.Container, error) {
+	if cfg.ImageId == "" {
+		return nil, errors.New("no image ID provided")
+	}
+
+	// check if the image exists
+	filter := &pop.Filter{Options: &pop.Filter_Id{Id: cfg.ImageId}}
+
+	if _, err := svc.getSingleImageInfo(ctx, filter); err != nil {
+		return nil, err
+	}
+
+	endpoints := cfg.Endpoints
+	if endpoints == nil || len(endpoints) == 0 {
+		// associate to the default network
+		ep, err := svc.getPrivateEndpoint()
+		if err != nil {
+			return nil, err
+		}
+
+		endpoints = map[string]*pop.Endpoint{
+			privateNetName: ep,
+		}
+	}
+
+	return &pop.Container{
+		Status:         pop.Container_CREATED,
+		ExtendedStatus: "container ready for instantiation",
+		Names:          []string{cfg.Name},
+		ImageId:        cfg.ImageId,
+		FlavourId:      cfg.FlavourId,
+		Created:        time.Now().Unix(),
+		Endpoints:      endpoints,
+		Md:             &pop.Metadata{Entries: make(map[string]string)},
+	}, nil
 }
 
 // stopContainer stops a container; this function expects to hold the lock on the given pcont.
