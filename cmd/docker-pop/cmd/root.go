@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -91,6 +92,20 @@ func credentials() creds.Credentials {
 	}
 }
 
+func getAllServerNames() []string {
+	srvs, err := cl().Servers(context.Background())
+	if err != nil {
+		fail(err)
+	}
+
+	ret := make([]string, len(srvs))
+	for i, srv := range srvs {
+		ret[i] = srv.Name
+	}
+
+	return ret
+}
+
 func fail(v ...interface{}) {
 	newV := append([]interface{}{"error: "}, v...)
 
@@ -111,13 +126,19 @@ func filter(v string) client.Filter {
 }
 
 func results(out interface{}, err error) {
+	step(out, err)
+	client.FlushSessions()
+	os.Exit(0)
+}
+
+func step(out interface{}, err error) {
 	if err != nil {
 		fail(err)
 	}
 
 	if out == nil {
 		fmt.Println("ok")
-		os.Exit(0)
+		return
 	}
 
 	bytes, err := yaml.Marshal(out)
@@ -125,8 +146,6 @@ func results(out interface{}, err error) {
 		fail(err)
 	}
 
-	client.FlushSessions()
-
 	fmt.Println(string(bytes))
-	os.Exit(0)
 }
+
