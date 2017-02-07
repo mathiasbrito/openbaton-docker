@@ -146,7 +146,7 @@ func (m *manager) setup() (cnl *amqp.Channel, deliveries <-chan amqp.Delivery, e
 	return
 }
 
-// cachingAccessor wraps an AMQPChannelAccessor, offering caching and 
+// cachingAccessor wraps an AMQPChannelAccessor, offering caching and
 // auto reacquiring of amqp.Channels.
 func cachingAccessor(acc AMQPChannelAccessor) AMQPChannelAccessor {
 	var cnl *amqp.Channel

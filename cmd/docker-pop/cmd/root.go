@@ -148,4 +148,3 @@ func step(out interface{}, err error) {
 
 	fmt.Println(string(bytes))
 }
-

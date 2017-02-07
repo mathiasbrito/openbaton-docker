@@ -121,7 +121,7 @@ func (svc *service) updateStatuses(states map[string]pop.Container_Status) {
 			if stopped {
 				if err := svc.releaseContIPs(cont); err != nil {
 					svc.WithError(err).WithFields(log.Fields{
-						"tag":            tag,
+						"tag":             tag,
 						"container-names": cont.Names,
 					}).Error("couldn't reclaim container IPs")
 				}

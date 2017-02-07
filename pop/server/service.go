@@ -114,14 +114,14 @@ func newService(cfg Config, l *log.Logger) (*service, error) {
 	l.WithFields(log.Fields{
 		"tag": tag,
 	}).Debug("creating private network if not present...")
-	
+
 	if err := svc.initPrivateNetwork(); err != nil {
 		return nil, err
 	}
 
 	l.WithFields(log.Fields{
-		"tag": tag,
-		"net-name": privateNetName,
+		"tag":        tag,
+		"net-name":   privateNetName,
 		"net-subnet": svc.privNet.net4,
 	}).Debug("obtained private network")
 
