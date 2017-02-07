@@ -131,11 +131,14 @@ func (svc *service) initPrivateNetwork() error {
 func (svc *service) newPrivateNetwork() (nr types.NetworkResource, opErr error) {
     // create a new private network
 
-    ipNet, err := svc.detectNewSubnet4()
+    ipNet4, err := svc.detectNewSubnet4()
     if err != nil {
         opErr = err
         return 
     }
+
+    gateway4 := ipNet4.IP
+    gateway4[len(gateway4) - 1 ] = 1 // give  the network a standard gateway on address .1
 
     opts := types.NetworkCreate{
         Attachable: true,
@@ -143,7 +146,8 @@ func (svc *service) newPrivateNetwork() (nr types.NetworkResource, opErr error) 
         IPAM: &network.IPAM{
             Config: []network.IPAMConfig{
                 {
-                    Subnet: ipNet.String(),
+                    Subnet: ipNet4.String(),
+                    Gateway: gateway4.String(),
                 },
             },
         },
