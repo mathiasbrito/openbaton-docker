@@ -5,16 +5,18 @@ import (
     "errors"
     "fmt"
     "net"
+    "sync"
 
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/api/types"
     pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/docker/docker/api/types/network"
+    log "github.com/sirupsen/logrus"
+    "github.com/openbaton/go-openbaton/util"
 )
 
-// this file implements a very very basic IP allocation system, that assigns 
-// to the private network incremental IPs. It does not support IP reassignment after
-// use.
+// this file implements a very very basic IP allocation system, that takes care of 
+// which IPs were allocated on the network.
 
 const (
     privateNetName = "popd-private"
@@ -162,12 +164,48 @@ func (svc *service) newPrivateNetwork() (nr types.NetworkResource, opErr error) 
     return newNet, nil
 }
 
+func (svc *service) releaseContIPs(pcont *svcCont) error {
+    tag := util.FuncName()
+
+    svc.WithFields(log.Fields{
+        "tag": tag,
+        "pcont-names": pcont.Names,
+    }).Debug("releasing IPs for container")
+    
+    if pcont.Endpoints == nil {
+        return nil
+    }
+
+    // release only the private IPs for now
+    privEp := pcont.Endpoints[privateNetName]
+    if privEp == nil || privEp.Ipv4 == nil {
+        return nil
+    }
+
+    ip := net.ParseIP(privEp.Ipv4.Address)
+    if ip == nil {
+        return nil
+    }
+
+    svc.privNet.ReturnV4(ip)
+    
+    svc.WithFields(log.Fields{
+        "tag": tag,
+        "pcont-names": pcont.Names,
+        "pcont-ip": ip,
+        "priv-net-allocated-ips": len(svc.privNet.taken4),
+    }).Debug("private IP released")
+
+    return nil
+}
+
 type svcNet struct {
     ID string
     current4 net.IP
     gateway4 net.IP
     net4     *net.IPNet   
-    exhausted bool
+    taken4   map[[4]byte]struct{} // struct{} has 0 size - this is actually a set
+    mux      sync.Mutex
 }
 
 func newSvcNet(dnr types.NetworkResource) (pnet svcNet, opErr error) {
@@ -191,6 +229,14 @@ func newSvcNet(dnr types.NetworkResource) (pnet svcNet, opErr error) {
         return
     }
 
+    // shrink the IP to 4 bytes
+    pnet.current4 = pnet.current4.To4()
+
+    pnet.taken4, opErr = parseTaken(dnr.Containers)
+    if opErr != nil {
+        return
+    }
+
     // add the gateway if present
     gateway4 := dnr.IPAM.Config[0].Gateway
     if gateway4 != "" {
@@ -200,24 +246,75 @@ func newSvcNet(dnr types.NetworkResource) (pnet svcNet, opErr error) {
     return
 }
 
+// GetV4 returns an IPv4 on the svcNet.
 func (pnet *svcNet) GetV4() (net.IP, net.IPMask, error) {
-    if err := pnet.nextV4(); err != nil {
-        return nil, nil, err
+    pnet.mux.Lock()
+    defer pnet.mux.Unlock()
+
+    // check if there are IPv4s left
+    if !pnet.hasNext4() {
+        return nil, nil, ErrIPExhausted
     }
 
-    if pnet.current4.Equal(pnet.gateway4) {
-        // skip the gateway and get the next one
-        return pnet.GetV4() 
-    }
+    // there is at least a valid ip - this loop should always break
+    for {
+        // get the next IPv4
+        pnet.nextV4()
 
-    return pnet.current4, pnet.net4.Mask, nil
+        if pnet.currentIsValid() {
+            b4, err := ip4ToArr(pnet.current4)
+            if err != nil {
+                return nil, nil, err
+            }
+
+            _, found := pnet.taken4[b4]
+            if !found {
+                // assign the IPv4
+                pnet.taken4[b4] = struct{}{}
+                return pnet.current4, pnet.net4.Mask, nil
+            }
+        }
+    }
 }
 
-func (pnet *svcNet) nextV4() error {
-    if pnet.exhausted {
-        return ErrIPExhausted
+// ReturnV4 returns an IPv4 to the network.
+// If the address is invalid, this operation returns false.
+func (pnet *svcNet) ReturnV4(ip net.IP) bool {
+    pnet.mux.Lock()
+    defer pnet.mux.Unlock()
+
+    ip4, err := ip4ToArr(ip)
+    if err != nil {
+        return false
     }
 
+    _, found := pnet.taken4[ip4]
+    delete(pnet.taken4, ip4)
+
+    return found
+}
+
+func (pnet *svcNet) currentIsValid() bool {
+    if pnet.current4.Equal(pnet.gateway4) {
+        return false
+    }
+
+    lb := pnet.current4[len(pnet.current4) - 1]
+    if lb == 0 || lb == 255 {
+        return false
+    }
+
+    return true
+}
+
+// hasNext4 would never work with an IPv6 (it uses 128 bit addresses)
+func (pnet *svcNet) hasNext4() bool {
+    return uint64(len(pnet.taken4)) < pnet.totalValidIPv4s()
+}
+
+// nextV4 advances current4 to the next IPv4, without 
+// caring about if it is valid.
+func (pnet *svcNet) nextV4() {
     // an IP Address is big endian
     for i := len(pnet.current4) - 1; i >= 0; i-- {
         pnet.current4[i]++
@@ -227,15 +324,33 @@ func (pnet *svcNet) nextV4() error {
             break
         }
     }
-
-    // notify the caller that the network is exhausted
+    
+    // Overflow - reset the counter
     if !pnet.net4.Contains(pnet.current4) {
-        pnet.exhausted = true
+        pnet.current4 = pnet.net4.IP.To4()
+        pnet.current4[3]++ // skip the first byte
+    }
+}
 
-        return ErrIPExhausted
+func (pnet *svcNet) totalValidIPv4s() uint64 {
+    maskBits, _ := pnet.net4.Mask.Size()
+    addrBits := uint64(32) - uint64(maskBits)
+    maxNumOfAddr := uint64(1) << addrBits // 2 ** addrBits
+
+    // each /24 is 8 bits, so if i.e. there are 16 address bits, 
+    // then there can be 2 ** (addrBits - 8) /24s
+    nOf24 := uint64(1) << (addrBits - uint64(8))
+
+    // there are 2 invalid ips in each /24 (.0 and .255)
+    maxNumOfAddr -= nOf24 * 2
+
+    // the gateway must too be subtracted from the
+    // available IPs
+    if pnet.gateway4 != nil {
+        maxNumOfAddr--
     }
 
-    return nil
+    return maxNumOfAddr
 }
 
 func inIPSlice(haystack []net.IP, needle net.IP) bool {
@@ -246,4 +361,39 @@ func inIPSlice(haystack []net.IP, needle net.IP) bool {
     }
 
     return false
+}
+
+func ip4ToArr(ip net.IP) (ipArr [4]byte, opErr error) {
+    ip4 := ip.To4()
+    if ip4 == nil {
+        opErr = fmt.Errorf("%v is not an IPv4", ip)
+        return
+    }
+
+    copy(ipArr[:], ip4)
+
+    return
+}
+
+// parseTaken creates a set of taken IPs already found on the network.
+func parseTaken(dconts map[string]types.EndpointResource) (map[[4]byte]struct{}, error) {
+    taken4 := make(map[[4]byte]struct{})
+
+    for _, dcont := range dconts {
+        if dcont.IPv4Address != "" {
+            ip := net.ParseIP(dcont.IPv4Address)
+            if ip == nil {
+                continue
+            }
+
+            ip4, err := ip4ToArr(ip)
+            if err != nil {
+                return nil, err
+            }
+
+            taken4[ip4] = struct{}{}
+        }
+    }
+
+    return taken4, nil
 }

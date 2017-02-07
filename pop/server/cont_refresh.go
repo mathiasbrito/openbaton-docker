@@ -104,16 +104,30 @@ func (svc *service) updateStatuses(states map[string]pop.Container_Status) {
 				continue
 			}
 
-			cont.Status = state
+			stopped := false
 
 			switch state {
 			case pop.Container_EXITED:
 				cont.ExtendedStatus = "the container cleanly exited"
 				cont.DockerID = ""
+				stopped = true
 
 			case pop.Container_FAILED:
 				cont.ExtendedStatus = "the Docker container terminated unexpectedly"
+				stopped = true
 			}
+
+			// if the container stopped, reclaim its IPs
+			if stopped {
+				if err := svc.releaseContIPs(cont); err != nil {
+					svc.WithError(err).WithFields(log.Fields{
+						"tag":            tag,
+						"container-names": cont.Names,
+					}).Error("couldn't reclaim container IPs")
+				}
+			}
+
+			cont.Status = state
 		}
 	}
 }

@@ -568,7 +568,8 @@ func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
 	pcont.ExtendedStatus = "the container has exited"
 	pcont.DockerID = ""
 
-	return nil
+	// in the end, release the container IPs
+	return svc.releaseContIPs(pcont)
 }
 
 func (svc *service) updateContainer(ctx context.Context, pcont *svcCont, dockerID string) error {
