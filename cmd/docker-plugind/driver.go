@@ -181,6 +181,7 @@ func (d *driver) LaunchInstanceAndWaitWithIPs(
 		"hostname": hostname,
 		"image":    image,
 		"flavour":  flavour,
+		"networks": networks,
 	}).Debug("received request")
 
 	_, err := d.SetupManagement(vimInstance)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -42,6 +43,7 @@ func init() {
 
 	RootCmd.PersistentFlags().String("auth", "", "username:password to log into popd with")
 	RootCmd.PersistentFlags().String("host", "", "specifies the server to connect to")
+	RootCmd.PersistentFlags().Bool("json", false, "output JSON instead of YAML")
 
 	viper.SetEnvPrefix("pop")
 
@@ -50,6 +52,8 @@ func init() {
 
 	viper.BindEnv("host")
 	viper.BindPFlag("host", RootCmd.PersistentFlags().Lookup("host"))
+
+	viper.BindPFlag("json", RootCmd.PersistentFlags().Lookup("json"))
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -141,7 +145,13 @@ func step(out interface{}, err error) {
 		return
 	}
 
-	bytes, err := yaml.Marshal(out)
+	var bytes []byte
+	if viper.GetBool("json") {
+		bytes, err = json.MarshalIndent(out, "", "\t")
+	} else {
+		bytes, err = yaml.Marshal(out)
+	}
+
 	if err != nil {
 		fail(err)
 	}

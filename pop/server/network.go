@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"sync"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
@@ -19,12 +21,13 @@ import (
 // which IPs were allocated on the network.
 
 const (
-	privateNetName = "popd-private"
+	defaultNetName = "private"
 )
 
 var (
-	ErrIPExhausted      = errors.New("no more IP available for this network")
-	ErrSubnetsExhausted = errors.New("no more subnets available for this host")
+	ErrAddrTaken        = grpc.Errorf(codes.AlreadyExists, "ip is not available")
+	ErrIPExhausted      = grpc.Errorf(codes.ResourceExhausted, "no more IP available for this network")
+	ErrSubnetsExhausted = grpc.Errorf(codes.ResourceExhausted, "no more subnets available for this host")
 )
 
 // detectNewSubnet scans every subnet known by docker, finds their subnets, and then finds a
@@ -94,42 +97,45 @@ func (svc *service) fetchDockerSubnets4() ([]net.IP, error) {
 	return ret, nil
 }
 
-func (svc *service) getPrivateEndpoint() (*pop.Endpoint, error) {
-	ip4, _, err := svc.privNet.GetV4()
+func (svc *service) getDefaultEndpoint() (*pop.Endpoint, error) {
+	ip4, _, err := svc.defaultNet.GetV4()
 	if err != nil {
 		return nil, err
 	}
 
 	return &pop.Endpoint{
-		NetId: svc.privNet.ID,
+		NetId: svc.defaultNet.ID,
 		Ipv4:  &pop.Ip{Address: ip4.String()},
 		Ipv6:  &pop.Ip{},
 	}, nil
 }
 
-func (svc *service) initPrivateNetwork() error {
-	net, err := svc.cln.NetworkInspect(context.Background(), privateNetName)
+func (svc *service) initPrivateNetwork(name string) (*svcNet, error) {
+	net, err := svc.cln.NetworkInspect(context.Background(), name)
 
 	// If the network doesn't exist, create a new one.
 	if client.IsErrNetworkNotFound(err) {
-		net, err = svc.newPrivateNetwork()
+		net, err = svc.newRandomNetwork(name)
 	}
 
 	// some other error happened
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	svc.privNet, err = newSvcNet(net)
+	newNet, err := newSvcNet(name, net)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	svc.nets[newNet.ID] = newNet
+	svc.netNames[name] = newNet.ID
+
+	return newNet, nil
 }
 
-func (svc *service) newPrivateNetwork() (nr types.NetworkResource, opErr error) {
-	// create a new private network
+func (svc *service) newRandomNetwork(name string) (nr types.NetworkResource, opErr error) {
+	// create a new network using a free /16
 
 	ipNet4, err := svc.detectNewSubnet4()
 	if err != nil {
@@ -153,7 +159,7 @@ func (svc *service) newPrivateNetwork() (nr types.NetworkResource, opErr error) 
 		},
 	}
 
-	resp, err := svc.cln.NetworkCreate(context.Background(), privateNetName, opts)
+	resp, err := svc.cln.NetworkCreate(context.Background(), name, opts)
 	if err != nil {
 		opErr = err
 		return
@@ -180,74 +186,86 @@ func (svc *service) releaseContIPs(pcont *svcCont) error {
 		return nil
 	}
 
-	// release only the private IPs for now
-	privEp := pcont.Endpoints[privateNetName]
-	if privEp == nil || privEp.Ipv4 == nil {
-		return nil
+	for nid, ep := range pcont.Endpoints {
+		if ep.Ipv4 == nil {
+			return nil
+		}
+
+		ip := net.ParseIP(ep.Ipv4.Address)
+		if ip == nil {
+			return nil
+		}
+
+		pnet := svc.nets[nid]
+		if pnet != nil {
+			pnet.ReturnV4(ip)
+
+			svc.WithFields(log.Fields{
+				"tag":               tag,
+				"pcont-names":       pcont.Names,
+				"pcont-ip":          ip,
+				"net-name":          pnet.Name,
+				"net-allocated-ips": len(pnet.taken4),
+			}).Debug("private IP released")
+		}
 	}
-
-	ip := net.ParseIP(privEp.Ipv4.Address)
-	if ip == nil {
-		return nil
-	}
-
-	svc.privNet.ReturnV4(ip)
-
-	svc.WithFields(log.Fields{
-		"tag":                    tag,
-		"pcont-names":            pcont.Names,
-		"pcont-ip":               ip,
-		"priv-net-allocated-ips": len(svc.privNet.taken4),
-	}).Debug("private IP released")
 
 	return nil
 }
 
+// svcNet wraps and represents a network handled by Popd.
+// While Pop represents networks as capable of having multiple subnetworks, this implementation
+// only supports a single subnet.
 type svcNet struct {
-	ID       string
+	ID   string
+	Name string
+
 	current4 net.IP
+	external bool
 	gateway4 net.IP
 	net4     *net.IPNet
 	taken4   map[[4]byte]struct{} // struct{} has 0 size - this is actually a set
 	mux      sync.Mutex
 }
 
-func newSvcNet(dnr types.NetworkResource) (pnet svcNet, opErr error) {
+func newSvcNet(name string, dnr types.NetworkResource) (*svcNet, error) {
 	if len(dnr.IPAM.Config) < 1 {
-		opErr = fmt.Errorf("malformed network %s", dnr.Name)
-		return
+		return nil, fmt.Errorf("malformed network %s", dnr.Name)
 	}
-
-	pnet.ID = dnr.ID
 
 	// I just need a subnet; the first one will be ok
 	subnet4 := dnr.IPAM.Config[0].Subnet
 	if subnet4 == "" {
-		opErr = fmt.Errorf("network %s has no IPv4 subnet", dnr.Name)
-		return
+		return nil, fmt.Errorf("network %s has no IPv4 subnet", dnr.Name)
 	}
 
 	// load the subnet, and use it as the base IP of the pnet
-	pnet.current4, pnet.net4, opErr = net.ParseCIDR(subnet4)
-	if opErr != nil {
-		return
+	current4, net4, err := net.ParseCIDR(subnet4)
+	if err != nil {
+		return nil, err
 	}
 
 	// shrink the IP to 4 bytes
-	pnet.current4 = pnet.current4.To4()
+	current4 = current4.To4()
 
-	pnet.taken4, opErr = parseTaken(dnr.Containers)
-	if opErr != nil {
-		return
+	taken4, err := parseTaken(dnr.Containers)
+	if err != nil {
+		return nil, err
 	}
 
 	// add the gateway if present
-	gateway4 := dnr.IPAM.Config[0].Gateway
-	if gateway4 != "" {
-		pnet.gateway4 = net.ParseIP(gateway4)
-	}
+	gateway4 := net.ParseIP(dnr.IPAM.Config[0].Gateway)
 
-	return
+	return &svcNet{
+		ID:   dnr.ID,
+		Name: name,
+
+		current4: current4,
+		external: !dnr.Internal,
+		gateway4: gateway4,
+		net4:     net4,
+		taken4:   taken4,
+	}, nil
 }
 
 // GetV4 returns an IPv4 on the svcNet.
@@ -281,6 +299,28 @@ func (pnet *svcNet) GetV4() (net.IP, net.IPMask, error) {
 	}
 }
 
+func (pnet *svcNet) ReserveV4(ip net.IP) error {
+	pnet.mux.Lock()
+	defer pnet.mux.Unlock()
+
+	if !pnet.net4.Contains(ip) {
+		return grpc.Errorf(codes.InvalidArgument, "%v is not contained in %v", ip, pnet.net4)
+	}
+
+	ip4, err := ip4ToArr(ip)
+	if err != nil {
+		return err
+	}
+
+	if _, found := pnet.taken4[ip4]; found {
+		return ErrAddrTaken
+	}
+
+	pnet.taken4[ip4] = struct{}{}
+
+	return nil
+}
+
 // ReturnV4 returns an IPv4 to the network.
 // If the address is invalid, this operation returns false.
 func (pnet *svcNet) ReturnV4(ip net.IP) bool {
@@ -296,6 +336,27 @@ func (pnet *svcNet) ReturnV4(ip net.IP) bool {
 	delete(pnet.taken4, ip4)
 
 	return found
+}
+
+func (pnet *svcNet) ToPop() *pop.Network {
+	return &pop.Network{
+		Id:       pnet.ID,
+		External: pnet.external,
+		Name:     pnet.Name,
+		Subnets: []*pop.Subnet{
+			{
+				Cidr:    pnet.net4.String(),
+				Gateway: pnet.net4.String(),
+			},
+		},
+	}
+}
+
+func (pnet *svcNet) ToPopSubnet() *pop.Subnet {
+	return &pop.Subnet{
+		Cidr:    pnet.net4.String(),
+		Gateway: pnet.net4.String(),
+	}
 }
 
 func (pnet *svcNet) currentIsValid() bool {

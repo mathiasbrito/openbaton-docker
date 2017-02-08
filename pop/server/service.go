@@ -58,7 +58,11 @@ type svcCont struct {
 }
 
 func (pcont *svcCont) Md() metadata {
-	return pcont.Container.Md.Entries
+	return pcont.ToPop().Md.Entries
+}
+
+func (pcont *svcCont) ToPop() *pop.Container {
+	return pcont.Container
 }
 
 // concrete service
@@ -70,12 +74,15 @@ type service struct {
 	cln   *client.Client
 	conts map[string]*svcCont
 
-	privNet svcNet
+	nets       map[string]*svcNet
+	defaultNet *svcNet // also in nets
 
-	// names is a map of name -> id for conts;
+	// contNames is a map of name -> id for conts;
 	// this allows fast matching of the id from the name
+	contNames map[string]string
 
-	names map[string]string
+	// same for nets
+	netNames map[string]string
 
 	contsMux sync.RWMutex
 	quitChan chan struct{}
@@ -101,10 +108,13 @@ func newService(cfg Config, l *log.Logger) (*service, error) {
 		sessionManager: sessionManager{
 			tk: make(map[string]struct{}),
 		},
-		users:    cfg.Users,
-		conts:    make(map[string]*svcCont),
-		names:    make(map[string]string),
-		quitChan: make(chan struct{}),
+
+		users:     cfg.Users,
+		conts:     make(map[string]*svcCont),
+		nets:      make(map[string]*svcNet),
+		contNames: make(map[string]string),
+		netNames:  make(map[string]string),
+		quitChan:  make(chan struct{}),
 	}
 
 	if err := svc.checkDocker(); err != nil {
@@ -115,15 +125,16 @@ func newService(cfg Config, l *log.Logger) (*service, error) {
 		"tag": tag,
 	}).Debug("creating private network if not present...")
 
-	if err := svc.initPrivateNetwork(); err != nil {
+	svc.defaultNet, err = svc.initPrivateNetwork(defaultNetName)
+	if err != nil {
 		return nil, err
 	}
 
 	l.WithFields(log.Fields{
 		"tag":        tag,
-		"net-name":   privateNetName,
-		"net-subnet": svc.privNet.net4,
-	}).Debug("obtained private network")
+		"net-name":   defaultNetName,
+		"net-subnet": svc.defaultNet.net4,
+	}).Debug("obtained default private network")
 
 	// spawn the monitoring loop
 	go svc.refreshLoop()

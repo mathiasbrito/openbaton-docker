@@ -129,7 +129,7 @@ func (svc *service) Images(ctx context.Context, filter *pop.Filter) (*pop.ImageL
 // Networks retrieves the current daemon networks.
 func (svc *service) Networks(ctx context.Context, filter *pop.Filter) (*pop.NetworkList, error) {
 	tag := util.FuncName()
-	op := "Images"
+	op := "Networks"
 
 	svc.WithFields(log.Fields{
 		"tag":    tag,
@@ -166,7 +166,7 @@ func (svc *service) filterContainer(filter *pop.Filter) (*svcCont, error) {
 	id := filter.GetId()
 
 	if name := filter.GetName(); name != "" {
-		id = svc.names[name] // will set id to "" if the name is not found
+		id = svc.contNames[name] // will set id to "" if the name is not found
 	}
 
 	if id == "" {
@@ -179,6 +179,28 @@ func (svc *service) filterContainer(filter *pop.Filter) (*svcCont, error) {
 	}
 
 	return pcont, nil
+}
+
+// filterNetwork uses a Filter to match a network.
+func (svc *service) filterNetwork(filter *pop.Filter) (*svcNet, error) {
+	// id and name can't be both set.
+	// If name is set, GetId will return ""
+	id := filter.GetId()
+
+	if name := filter.GetName(); name != "" {
+		id = svc.netNames[name] // will set id to "" if the name is not found
+	}
+
+	if id == "" {
+		return nil, errors.New("no network specified")
+	}
+
+	pnet, ok := svc.nets[id]
+	if !ok {
+		return nil, ErrNoSuchNetwork
+	}
+
+	return pnet, nil
 }
 
 func (svc *service) getContainerInfos(ctx context.Context) (*pop.ContainerList, error) {
@@ -226,14 +248,10 @@ func (svc *service) getImageInfos(ctx context.Context) (*pop.ImageList, error) {
 }
 
 func (svc *service) getNetworkInfos(ctx context.Context) (*pop.NetworkList, error) {
-	dockerNets, err := svc.cln.NetworkList(ctx, types.NetworkListOptions{})
-	if err != nil {
-		return nil, err
-	}
+	nets := make([]*pop.Network, 0, len(svc.nets))
 
-	nets := make([]*pop.Network, len(dockerNets))
-	for i, dnet := range dockerNets {
-		nets[i] = extractNetwork(dnet)
+	for _, net := range svc.nets {
+		nets = append(nets, net.ToPop())
 	}
 
 	return &pop.NetworkList{List: nets}, nil
@@ -248,7 +266,7 @@ func (svc *service) getSingleContainerInfo(_ context.Context, filter *pop.Filter
 		return nil, err
 	}
 
-	return pcont.Container, nil
+	return pcont.ToPop(), nil
 }
 
 func (*service) getSingleFlavourInfo(_ context.Context, filter *pop.Filter) (*pop.Flavour, error) {
@@ -294,19 +312,12 @@ func (svc *service) getSingleImageInfo(ctx context.Context, filter *pop.Filter) 
 }
 
 func (svc *service) getSingleNetworkInfo(ctx context.Context, filter *pop.Filter) (*pop.Network, error) {
-	query := filter.GetName()
-
-	if id := filter.GetId(); id != "" {
-		query = id // prioritise IDs
-	}
-
-	// Docker API in some places accepts either a name or an ID.
-	dnet, err := svc.cln.NetworkInspect(ctx, query)
+	pnet, err := svc.filterNetwork(filter)
 	if err != nil {
 		return nil, err
 	}
 
-	return extractNetwork(dnet), nil
+	return pnet.ToPop(), nil
 }
 
 func extractNetwork(dnet types.NetworkResource) *pop.Network {

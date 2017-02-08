@@ -26,8 +26,7 @@ func New() (*Server, error) {
 		return nil, err
 	}
 
-	l := log.New()
-	l.Level = cfg.LogLevel
+	l := newLogger(cfg.LogLevel)
 
 	return &Server{
 		Logger: l,

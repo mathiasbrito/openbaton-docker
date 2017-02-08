@@ -61,6 +61,13 @@ func (h *handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, script
 		"vnfr-name": vnfr.Name,
 	}).Info("instantiating VNFR")
 
+	if h.Level >= log.DebugLevel {
+		h.WithFields(log.Fields{
+			"tag":  "docker-vnfm-handl-instantiate",
+			"vnfr": JSON(vnfr),
+		}).Debug("VNFR dump")
+	}
+
 	if vnfr.VDUs == nil {
 		return nil, errors.New("no VDU provided")
 	}
@@ -94,11 +101,18 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 		}
 	}
 
+	/*for key, value := range dependency.VNFCParameters {
+		for key, value := range dependency.Parameters {
+			for pkey, pval := range value.Parameters {
+				md[fmt.Sprintf("%s-%s", key, pkey)] = pval
+			}
+		}
+	}*/
+
 	if h.Level >= log.DebugLevel {
 		h.WithFields(log.Fields{
 			"tag":             "docker-vnfm-handl-modify",
-			"vnfr-hb_version": vnfr.HbVersion,
-			"vnfr-name":       vnfr.Name,
+			"vnfr":            JSON(vnfr),
 			"vnfr-dependency": JSON(dependency),
 			"md":              md,
 		}).Debug("modifying VNFR")

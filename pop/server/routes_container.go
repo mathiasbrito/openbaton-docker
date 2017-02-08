@@ -29,6 +29,7 @@ var (
 	ErrInvalidState    = grpc.Errorf(codes.FailedPrecondition, "container is in an invalid state")
 	ErrNoSuchContainer = grpc.Errorf(codes.NotFound, "no container for the given filter")
 	ErrNoSuchFlavour   = grpc.Errorf(codes.NotFound, "no flavour for the given filter")
+	ErrNoSuchNetwork   = grpc.Errorf(codes.NotFound, "no network for the given filter")
 	ErrNotStarted      = grpc.Errorf(codes.Unavailable, "container not started yet")
 )
 
@@ -74,7 +75,7 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 		"name": cfg.Name,
 	}).Debug("list lock obtained")
 
-	if _, found := svc.names[cfg.Name]; found {
+	if _, found := svc.contNames[cfg.Name]; found {
 		return nil, grpc.Errorf(codes.AlreadyExists, "container name %s already taken", cfg.Name)
 	}
 
@@ -103,7 +104,7 @@ func (svc *service) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.
 	}
 
 	// cont.Names has always at least an element
-	svc.names[cont.Names[0]] = cont.Id
+	svc.contNames[cont.Names[0]] = cont.Id
 
 	svc.WithFields(log.Fields{
 		"tag":        tag,
@@ -176,7 +177,7 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 
 	// deletes the container from the container list and from names
 	delete(svc.conts, pcont.Id)
-	delete(svc.names, pcont.Names[0])
+	delete(svc.contNames, pcont.Names[0])
 
 	// if someone still holds a reference to this container
 	pcont.Status = pop.Container_UNAVAILABLE
@@ -379,7 +380,7 @@ func (svc *service) Start(ctx context.Context, filter *pop.Filter) (*pop.Contain
 	pcont.Status = pop.Container_RUNNING
 	pcont.ExtendedStatus = "the container is running"
 
-	return pcont.Container, nil
+	return pcont.ToPop(), nil
 }
 
 // Stop stops the container identified by the given filter.
@@ -470,26 +471,19 @@ func (svc *service) Stop(ctx context.Context, filter *pop.Filter) (*empty.Empty,
 	return &empty.Empty{}, svc.stopContainer(ctx, pcont)
 }
 
-func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (container.ContainerCreateCreatedBody, error) {
+func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (ccb container.ContainerCreateCreatedBody, opErr error) {
 	var dockerEndpoints map[string]*network.EndpointSettings
 
 	if pcont.Endpoints != nil {
 		dockerEndpoints = make(map[string]*network.EndpointSettings)
 
-		for netname, endp := range pcont.Endpoints {
-			var ipcfg *network.EndpointIPAMConfig
-
-			if endp.Ipv4.Address != "" || endp.Ipv6.Address != "" {
-				ipcfg = &network.EndpointIPAMConfig{
-					IPv4Address: endp.Ipv4.Address,
-					IPv6Address: endp.Ipv6.Address,
-				}
-			}
-
-			dockerEndpoints[netname] = &network.EndpointSettings{
+		for netID, endp := range pcont.Endpoints {
+			dockerEndpoints[netID] = &network.EndpointSettings{
 				NetworkID:  endp.NetId,
 				EndpointID: endp.EndpointId,
-				IPAMConfig: ipcfg,
+				IPAMConfig: &network.EndpointIPAMConfig{
+					IPv4Address: endp.Ipv4.Address, // ensured by creatPcont to be valid
+				},
 			}
 		}
 	}
@@ -528,13 +522,42 @@ func (svc *service) createPcont(ctx context.Context, cfg *pop.ContainerConfig) (
 	endpoints := cfg.Endpoints
 	if endpoints == nil || len(endpoints) == 0 {
 		// associate to the default network
-		ep, err := svc.getPrivateEndpoint()
+		ep, err := svc.getDefaultEndpoint()
 		if err != nil {
 			return nil, err
 		}
 
 		endpoints = map[string]*pop.Endpoint{
-			privateNetName: ep,
+			svc.defaultNet.ID: ep,
+		}
+	} else {
+		// allocate IPs on networks
+		for netID, endp := range endpoints {
+			pnet, found := svc.nets[netID]
+			if !found {
+				return nil, grpc.Errorf(codes.NotFound, "no network with id %s", netID)
+			}
+
+			// no IPv6 support atm
+
+			if endp.Ipv4 != nil && endp.Ipv4.Address != "" {
+				// Reserve the ipv4
+				if err := pnet.ReserveV4(net.ParseIP(endp.Ipv4.Address)); err != nil {
+					return nil, err
+				}
+			} else {
+				// dynamically allocate a new IP
+
+				ip, _, err := pnet.GetV4()
+				if err != nil {
+					return nil, err
+				}
+
+				endp.Ipv4 = &pop.Ip{
+					Address: ip.String(),
+					Subnet:  pnet.ToPopSubnet(),
+				}
+			}
 		}
 	}
 
