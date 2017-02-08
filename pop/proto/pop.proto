@@ -103,10 +103,11 @@ message Credentials {
 
 message Endpoint {
   string net_id = 1;
-  string endpoint_id = 2;
-  Ip ipv4 = 3;
-  Ip ipv6 = 4;
-  string mac = 5;
+  string net_name = 2;
+  string endpoint_id = 3;
+  Ip ipv4 = 4;
+  Ip ipv6 = 5;
+  string mac = 6;
 }
 
 // Filter is used to specify a filter that matches a container.

@@ -343,10 +343,15 @@ func (cln *Client) makeServer(ctx context.Context, cont *pop.Container) (srv *ca
 	ipMap := make(map[string][]string)
 
 	if cont.Endpoints != nil {
-		for netname, ep := range cont.Endpoints {
+		for netID, ep := range cont.Endpoints {
 			if ep.Ipv4 != nil && ep.Ipv4.Address != "" {
+				name := netID
+				if ep.NetName != "" {
+					name = ep.NetName
+				}
+
 				// no ipv6 for now
-				ipMap[netname] = []string{ep.Ipv4.Address}
+				ipMap[name] = []string{ep.Ipv4.Address}
 			}
 		}
 	}

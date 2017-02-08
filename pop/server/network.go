@@ -446,8 +446,8 @@ func parseTaken(dconts map[string]types.EndpointResource) (map[[4]byte]struct{},
 
 	for _, dcont := range dconts {
 		if dcont.IPv4Address != "" {
-			ip := net.ParseIP(dcont.IPv4Address)
-			if ip == nil {
+			ip, _, err := net.ParseCIDR(dcont.IPv4Address)
+			if err != nil {
 				continue
 			}
 

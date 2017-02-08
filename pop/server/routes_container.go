@@ -538,6 +538,9 @@ func (svc *service) createPcont(ctx context.Context, cfg *pop.ContainerConfig) (
 				return nil, grpc.Errorf(codes.NotFound, "no network with id %s", netID)
 			}
 
+			// update endpoint network name
+			endp.NetName = pnet.Name
+
 			// no IPv6 support atm
 
 			if endp.Ipv4 != nil && endp.Ipv4.Address != "" {
