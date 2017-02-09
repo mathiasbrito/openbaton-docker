@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mcilloni/openbaton-docker/mgmt"
@@ -95,19 +96,31 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 
 	md := make(map[string]string)
 
-	for key, value := range dependency.Parameters {
-		for pkey, pval := range value.Parameters {
-			md[fmt.Sprintf("%s-%s", key, pkey)] = pval
+	for ptype, depParam := range dependency.Parameters {
+		if ptype == vnfr.Type {
+			continue // skip yourself
+		}
+
+		for pkey, pval := range depParam.Parameters {
+			key := strings.ToUpper(fmt.Sprintf("%s_%s", ptype, pkey))
+
+			md[key] = pval
 		}
 	}
 
-	/*for key, value := range dependency.VNFCParameters {
-		for key, value := range dependency.Parameters {
-			for pkey, pval := range value.Parameters {
-				md[fmt.Sprintf("%s-%s", key, pkey)] = pval
+	for ptype, vnfcDepParam := range dependency.VNFCParameters {
+		if ptype == vnfr.Type {
+			continue // skip yourself
+		}
+		
+		for _, depParam := range vnfcDepParam.Parameters {
+			for pkey, pval := range depParam.Parameters {
+				key := strings.ToUpper(fmt.Sprintf("%s_%s", ptype, pkey))
+
+				md[key] = pval
 			}
 		}
-	}*/
+	}
 
 	if h.Level >= log.DebugLevel {
 		h.WithFields(log.Fields{
