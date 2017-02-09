@@ -36,7 +36,9 @@ type Config struct {
 	Users       Users
 	DockerdHost string
 	LogLevel    log.Level
-	// Add TLS here
+	
+	TLSCertPath string
+	TLSKeyPath	string
 }
 
 // LoadConfig either reads a config file through viper, or

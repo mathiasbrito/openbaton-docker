@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/openbaton/go-openbaton/util"
@@ -89,10 +90,21 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	srv := grpc.NewServer(
+	opts := []grpc.ServerOption{
 		grpc.StreamInterceptor(s.svc.streamInterceptor),
 		grpc.UnaryInterceptor(s.svc.unaryInterceptor),
-	)
+	}
+
+	if s.Config.TLSCertPath != "" && s.Config.TLSKeyPath != "" {
+		creds, err := credentials.NewServerTLSFromFile(s.Config.TLSCertPath, s.Config.TLSKeyPath)
+		if err != nil {
+			return err
+		}
+
+		opts = append(opts, grpc.Creds(creds))
+	}
+
+	srv := grpc.NewServer(opts...)
 
 	pop.RegisterPopServer(srv, s.svc)
 
