@@ -139,7 +139,8 @@ func (d *driver) DeleteSubnet(vimInstance *catalogue.VIMInstance, existingSubnet
 func (d *driver) LaunchInstance(
 	vimInstance *catalogue.VIMInstance,
 	hostname, image, flavour, keyPair string,
-	networks, securityGroups []string,
+	networks []*catalogue.VNFDConnectionPoint,
+	securityGroups []string,
 	userData string) (*catalogue.Server, error) {
 
 	tag := util.FuncName()
@@ -154,7 +155,8 @@ func (d *driver) LaunchInstance(
 func (d *driver) LaunchInstanceAndWait(
 	vimInstance *catalogue.VIMInstance,
 	hostname, image, flavour, keyPair string,
-	networks, securityGroups []string,
+	networks []*catalogue.VNFDConnectionPoint,
+	securityGroups []string,
 	userData string) (*catalogue.Server, error) {
 
 	tag := util.FuncName()
@@ -169,7 +171,8 @@ func (d *driver) LaunchInstanceAndWait(
 func (d *driver) LaunchInstanceAndWaitWithIPs(
 	vimInstance *catalogue.VIMInstance,
 	hostname, image, flavour, keyPair string,
-	networks, securityGroups []string,
+	networks []*catalogue.VNFDConnectionPoint,
+	securityGroups []string,
 	userData string,
 	floatingIps map[string]string,
 	keys []*catalogue.Key) (*catalogue.Server, error) {
@@ -198,7 +201,7 @@ func (d *driver) LaunchInstanceAndWaitWithIPs(
 
 	ips := map[string]string{}
 	for _, n := range networks {
-		ips[n] = "" // gets a random IP
+		ips[n.VirtualLinkReference] = "" // gets a random IP
 	}
 
 	return client.New(vimInstance).Create(context.Background(), hostname, image, flavour, ips)

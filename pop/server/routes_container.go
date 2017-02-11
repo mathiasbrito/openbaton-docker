@@ -532,13 +532,19 @@ func (svc *service) createPcont(ctx context.Context, cfg *pop.ContainerConfig) (
 		}
 	} else {
 		// allocate IPs on networks
-		for netID, endp := range endpoints {
+		for netName, endp := range endpoints {
+			netID, found := svc.netNames[netName]
+			if !found {
+				return nil, grpc.Errorf(codes.NotFound, "no network with name %s", netName)
+			}
+
 			pnet, found := svc.nets[netID]
 			if !found {
 				return nil, grpc.Errorf(codes.NotFound, "no network with id %s", netID)
 			}
 
-			// update endpoint network name
+			// update endpoint network ID and name
+			endp.NetId = netID
 			endp.NetName = pnet.Name
 
 			// no IPv6 support atm

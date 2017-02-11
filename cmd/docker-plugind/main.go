@@ -68,7 +68,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "warn: using default parameters")
 	}
 
-	svc, err := plugin.New(d, params)
+	svc, err := plugin.NewVIM(d, params)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: while initialising Plugin %s: %v\n", params.Name, err)
 		os.Exit(1)
