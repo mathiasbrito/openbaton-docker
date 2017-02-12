@@ -1,31 +1,31 @@
-# Go Docker VNFM (AMQP)
-`docker-vnfmd` is a Virtual Network Function Manager implementation for [OpenBaton][openbaton], written using Go and [go-openbaton] and designed to be used to manage Docker containers using [docker-plugind] and [docker-popd].
+# Pop VNFM (AMQP)
+`pop-vnfmd` is a generic Virtual Network Function Manager implementation for [OpenBaton][openbaton], written using Go and [go-openbaton] and designed to be used to manage containers (like Docker) using [pop-plugind] and a Pop server like [docker-popd].
 
 ## Technical Requirements
 
-You need a fully working NFVO to use the Docker VNFM, plus [docker-plugind] running and available to the NFVO.
-You'll also need a Docker installation with a functioning and reachable instance of [docker-popd].
+You need a fully working NFVO to use the Pop VNFM, plus [pop-plugind] running and available to the NFVO.
+You'll also need a functioning and reachable instance of a Pop server, like [docker-popd].
 
-## How to install `docker-vnfmd`
+## How to install `pop-vnfmd`
 
 On both *NIX and Windows:
 ```shell
-go get -u github.com/mcilloni/openbaton-docker/cmd/docker-vnfmd
+go get -u github.com/mcilloni/openbaton-docker/cmd/pop-vnfmd
 ```
 
-The `go` tool will automatically fetch and build both the sources and their dependencies, and a `docker-vnfmd` binary will be generated in `$GOPATH/bin` (`%GOPATH%\bin` on Windows CMD).
+The `go` tool will automatically fetch and build both the sources and their dependencies, and a `pop-vnfmd` binary will be generated in `$GOPATH/bin` (`%GOPATH%\bin` on Windows CMD).
 
-## How to use `docker-vnfmd`
+## How to use `pop-vnfmd`
 
  ```bash
- docker-vnfmd --cfg /path/to/config.toml
+ pop-vnfmd --cfg /path/to/config.toml
  ```
 
 The VNFM must be configured using a configuration file, specified through the `--cfg` flag (see [the sample configuration for further details][sample-conf]).
 
 In case no such flag is specified, the default behaviour is to search in the current directory for a file named `config.toml`.
 
-## How to configure `docker-vnfmd`
+## How to configure `pop-vnfmd`
 
 The sample configuration should work straight out of the box with a standard local setup of OpenBaton.
 
@@ -59,7 +59,7 @@ Apache License, Version 2.0. See LICENSE for further details.
 [openbaton]: http://openbaton.org
 [openbaton-doc]: http://openbaton.org/documentation
 [openbaton-github]: http://github.org/openbaton
-[sample-conf]: https://raw.githubusercontent.com/mcilloni/openbaton-docker/master/cmd/docker-vnfmd/config.toml
+[sample-conf]: https://raw.githubusercontent.com/mcilloni/openbaton-docker/master/cmd/pop-vnfmd/config.toml
 [go-openbaton]: http://github.com/openbaton/go-openbaton
 [docker-popd]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-popd
-[docker-plugind]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-plugind
+[pop-plugind]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-plugind

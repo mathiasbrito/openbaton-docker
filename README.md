@@ -14,10 +14,10 @@ This repository hosts several packages and services to enable the [OpenBaton][op
 - [pop/server](https://github.com/mcilloni/openbaton-docker/tree/master/pop/server): provides a full server for Pop, that directly invokes a Docker daemon instance.
 
 ## Services
-- [cmd/docker-plugind](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-plugind): OpenBaton Plugin for Docker.
 - [cmd/docker-pop](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-pop): CLI client for docker-popd.
 - [cmd/docker-popd](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-popd): Pop server for Docker.
-- [cmd/docker-vnfmd](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-vnfmd): VNF Manager for Docker.
+- [cmd/pop-plugind](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-plugind): OpenBaton Plugin for Pop (Docker).
+- [cmd/pop-vnfmd](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-vnfmd): VNF Manager for Pop (Docker).
 
 
 ## Issue tracker

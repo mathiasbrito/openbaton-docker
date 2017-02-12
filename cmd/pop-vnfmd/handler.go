@@ -37,7 +37,7 @@ func (h *handl) Configure(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalo
 
 func (h *handl) HandleError(vnfr *catalogue.VirtualNetworkFunctionRecord) error {
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-error",
+		"tag":       "pop-vnfm-handl-error",
 		"vnfm-name": vnfr.Name,
 	}).Error("error for VNFR")
 
@@ -47,7 +47,7 @@ func (h *handl) HandleError(vnfr *catalogue.VirtualNetworkFunctionRecord) error 
 func (h *handl) Heal(vnfr *catalogue.VirtualNetworkFunctionRecord,
 	component *catalogue.VNFCInstance, cause string) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-heal",
+		"tag":       "pop-vnfm-handl-heal",
 		"vnfr-name": vnfr.Name,
 	}).Info("handling heal")
 
@@ -58,13 +58,13 @@ func (h *handl) Heal(vnfr *catalogue.VirtualNetworkFunctionRecord,
 func (h *handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, scripts interface{},
 	vimInstances map[string][]*catalogue.VIMInstance) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-instantiate",
+		"tag":       "pop-vnfm-handl-instantiate",
 		"vnfr-name": vnfr.Name,
 	}).Info("instantiating VNFR")
 
 	if h.Level >= log.DebugLevel {
 		h.WithFields(log.Fields{
-			"tag":  "docker-vnfm-handl-instantiate",
+			"tag":  "pop-vnfm-handl-instantiate",
 			"vnfr": JSON(vnfr),
 		}).Debug("VNFR dump")
 	}
@@ -81,7 +81,7 @@ func (h *handl) Instantiate(vnfr *catalogue.VirtualNetworkFunctionRecord, script
 			}
 
 			h.WithFields(log.Fields{
-				"tag":      "docker-vnfm-handl-instantiate",
+				"tag":      "pop-vnfm-handl-instantiate",
 				"srv-name": srv.Name,
 			}).Debug("server is alive")
 		}
@@ -124,7 +124,7 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 
 	if h.Level >= log.DebugLevel {
 		h.WithFields(log.Fields{
-			"tag":             "docker-vnfm-handl-modify",
+			"tag":             "pop-vnfm-handl-modify",
 			"vnfr":            JSON(vnfr),
 			"vnfr-dependency": JSON(dependency),
 			"md":              md,
@@ -145,7 +145,7 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 // Query allows retrieving a VNF instance state and attributes. (not implemented)
 func (h *handl) Query() error {
 	h.WithFields(log.Fields{
-		"tag": "docker-vnfm-handl-query",
+		"tag": "pop-vnfm-handl-query",
 	}).Warn("query invoked, not implemented")
 
 	return nil
@@ -156,7 +156,7 @@ func (h *handl) Resume(vnfr *catalogue.VirtualNetworkFunctionRecord,
 	dependency *catalogue.VNFRecordDependency) (*catalogue.VirtualNetworkFunctionRecord, error) {
 
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-resume",
+		"tag":       "pop-vnfm-handl-resume",
 		"vnfr-name": vnfr.Name,
 		"vnfr-id":   vnfr.ID,
 	}).Info("resuming VNFR")
@@ -172,7 +172,7 @@ func (h *handl) Scale(scaleInOrOut catalogue.Action,
 	dependency *catalogue.VNFRecordDependency) (*catalogue.VirtualNetworkFunctionRecord, error) {
 
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-scale",
+		"tag":       "pop-vnfm-handl-scale",
 		"vnfr-name": vnfr.Name,
 		"vnfr-id":   vnfr.ID,
 		"action":    scaleInOrOut,
@@ -186,7 +186,7 @@ func (h *handl) Scale(scaleInOrOut catalogue.Action,
 // Start starts a VNFR.
 func (h *handl) Start(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-start",
+		"tag":       "pop-vnfm-handl-start",
 		"vnfr-name": vnfr.Name,
 	}).Info("starting VNFR")
 
@@ -205,7 +205,7 @@ func (h *handl) StartVNFCInstance(vnfr *catalogue.VirtualNetworkFunctionRecord,
 	vnfcInstance *catalogue.VNFCInstance) (*catalogue.VirtualNetworkFunctionRecord, error) {
 
 	h.WithFields(log.Fields{
-		"tag":                "docker-vnfm-handl-start_vnfc_instance",
+		"tag":                "pop-vnfm-handl-start_vnfc_instance",
 		"vnfc_instance-name": vnfcInstance.Hostname,
 		"vnfc_instance-id":   vnfcInstance.ID,
 		"vim_instance-id":    vnfcInstance.VIMID,
@@ -221,7 +221,7 @@ func (h *handl) StartVNFCInstance(vnfr *catalogue.VirtualNetworkFunctionRecord,
 // Stop stops a previously created VNF instance.
 func (h *handl) Stop(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-stop",
+		"tag":       "pop-vnfm-handl-stop",
 		"vnfr-name": vnfr.Name,
 	}).Info("stopping VNFR")
 
@@ -232,7 +232,7 @@ func (h *handl) StopVNFCInstance(vnfr *catalogue.VirtualNetworkFunctionRecord,
 	vnfcInstance *catalogue.VNFCInstance) (*catalogue.VirtualNetworkFunctionRecord, error) {
 
 	h.WithFields(log.Fields{
-		"tag":                "docker-vnfm-handl-stop_vnfc_instance",
+		"tag":                "pop-vnfm-handl-stop_vnfc_instance",
 		"vnfc_instance-name": vnfcInstance.Hostname,
 		"vnfc_instance-id":   vnfcInstance.ID,
 	}).Info("stopping VNFCInstance")
@@ -243,7 +243,7 @@ func (h *handl) StopVNFCInstance(vnfr *catalogue.VirtualNetworkFunctionRecord,
 // Terminate allows terminating gracefully or forcefully a previously created VNF instance.
 func (h *handl) Terminate(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":             "docker-vnfm-handl-terminate",
+		"tag":             "pop-vnfm-handl-terminate",
 		"vnfr-name":       vnfr.Name,
 		"vnfr-hb_version": vnfr.HbVersion,
 	}).Info("terminating VNFR")
@@ -252,7 +252,7 @@ func (h *handl) Terminate(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalo
 		if event.Event == catalogue.EventRelease {
 			for _, vdu := range vnfr.VDUs {
 				h.WithFields(log.Fields{
-					"tag":       "docker-vnfm-handl-terminate",
+					"tag":       "pop-vnfm-handl-terminate",
 					"vnfr-name": vnfr.Name,
 					"vdu":       vdu,
 				}).Debug("removing VDU")
@@ -269,7 +269,7 @@ func (h *handl) Terminate(vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalo
 func (h *handl) UpdateSoftware(script *catalogue.Script,
 	vnfr *catalogue.VirtualNetworkFunctionRecord) (*catalogue.VirtualNetworkFunctionRecord, error) {
 	h.WithFields(log.Fields{
-		"tag":       "docker-vnfm-handl-update_software",
+		"tag":       "pop-vnfm-handl-update_software",
 		"script":    script,
 		"vnfr-name": vnfr.Name,
 		"vnfr-id":   vnfr.ID,
@@ -283,7 +283,7 @@ func (h *handl) UpdateSoftware(script *catalogue.Script,
 // UpgradeSoftware allows deploying a new software release to a VNF instance.
 func (h *handl) UpgradeSoftware() error {
 	h.WithFields(log.Fields{
-		"tag": "docker-vnfm-handl-update_software",
+		"tag": "pop-vnfm-handl-update_software",
 	}).Warn("UpgradeSoftware called - but it's no-op")
 
 	return nil
@@ -292,7 +292,7 @@ func (h *handl) UpgradeSoftware() error {
 // UserData returns a string containing UserData.
 func (h *handl) UserData() string {
 	h.WithFields(log.Fields{
-		"tag": "docker-vnfm-handl-user_data",
+		"tag": "pop-vnfm-handl-user_data",
 	}).Info("returning UserData")
 
 	return "#!/usr/bin/env sh\n"

@@ -1,21 +1,21 @@
-﻿# Go Docker VIM Driver plugin
-`docker-plugind` is a VIM Driver Plugin that enables OpenBaton to use Docker through a [docker-popd daemon][docker-popd].
+﻿# Pop VIM Driver plugin
+`pop-plugind` is a VIM Driver Plugin that enables OpenBaton to use a containerisation solution (like Docker) through a Pop daemon, like [docker-popd][docker-popd].
 
-This plugin is still in its very early phase, and can only spawn and close single containers at the moment. 
+This plugin is still in its very early phase, and many features are yet to be implemented. 
 
-## How to install `docker-plugind`
-`docker-plugind` can be built using `go`, with 
+## How to install `pop-plugind`
+`pop-plugind` can be built using `go`, with 
 
 ```shell
-go get -u github.com/mcilloni/openbaton-docker/cmd/docker-plugind
+go get -u github.com/mcilloni/openbaton-docker/cmd/pop-plugind
 ```
 
-This will fetch and build the source and its dependencies, creating a `docker-plugind` in the `bin` directory of your _GOPATH_.
+This will fetch and build the source and its dependencies, creating a `pop-plugind` in the `bin` directory of your _GOPATH_.
 
 ## How to launch the Docker plugin
 
 ```shell
-docker-plugind --log "logfile" "name" "rabbit host" "port" "# of workers to be spawned" "username" "password"
+pop-plugind --log "logfile" "name" "rabbit host" "port" "# of workers to be spawned" "username" "password"
 ```
 
 If `--log` is omitted, the plugin will log on `/var/log/openbaton/type-plugin.log` on *NIX and in the Event Logger on Windows.
@@ -24,12 +24,12 @@ Use `--log -` to log only on `stdout`.
 An empty command line is equivalent with the invocation below:
 
 ```shell
-docker-plugind --log "-" openbaton localhost 5672 10 admin openbaton
+pop-plugind --log "-" openbaton localhost 5672 10 admin openbaton
 ```
 
-## How to use the Docker plugin
+## How to use the Pop plugin
 
-After launching the plugin (see above) and [docker-popd][docker-popd], use a VIM instance JSON descriptor similar to this:
+After launching the plugin (see above) and the Pop server, use a VIM instance JSON descriptor similar to this:
 
 ```json
 {
@@ -57,11 +57,11 @@ OpenBaton expects its plugins to be contained in `.jar` files. If you wish to au
 
 ```shell
 # set the environment variable GOOS = linux
-go build github.com/mcilloni/openbaton-docker/cmd/docker-plugind
-thunks docker-plugind
+go build github.com/mcilloni/openbaton-docker/cmd/pop-plugind
+thunks pop-plugind
 ``` 
 
-This will create a self extracting Jar named _docker-plugind.jar_ that will extract and launch the VimDriver, executing it with the arguments provided by the NFVO.
+This will create a self extracting Jar named _pop-plugind.jar_ that will extract and launch the VimDriver, executing it with the arguments provided by the NFVO.
 
 ## Issue tracker
 

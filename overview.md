@@ -1,6 +1,8 @@
 openbaton-docker: overview
 ==========================
 
+![Deployment overlay](deploy.png)
+
 # Why?
 openbaton-docker strives to be a viable alternative to Openstack for OpenBaton.
 
