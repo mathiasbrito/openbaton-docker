@@ -11,8 +11,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
-var verbose bool
+var (
+	cfgFile  string
+	keepCont bool
+	verbose  bool
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -73,7 +76,10 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "cfg", "", "config file (default is 'docker-popd.toml')")
+	RootCmd.PersistentFlags().BoolVar(&keepCont, "keep-stopped", false, "keep Docker containers after they exit")
 	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "output everything on the logs")
+
+	viper.BindPFlag("keep-stopped", RootCmd.PersistentFlags().Lookup("keep-stopped"))
 }
 
 func loadConfig() error {
@@ -88,6 +94,7 @@ func loadConfig() error {
 
 	viper.AddConfigPath(wd)
 	viper.SetConfigFile(cfgFile)
+
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.

@@ -498,7 +498,7 @@ func (svc *service) createContainer(ctx context.Context, pcont *svcCont) (ccb co
 			Env:      pcont.Md().Strings(),
 		},
 		&container.HostConfig{
-			AutoRemove: true,
+			AutoRemove: svc.autoRemove,
 		},
 		&network.NetworkingConfig{
 			EndpointsConfig: dockerEndpoints,

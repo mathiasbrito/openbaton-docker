@@ -23,6 +23,7 @@ var (
 		Users:       Users{},
 		DockerdHost: client.DefaultDockerHost,
 		LogLevel:    log.DebugLevel,
+		AutoRemove:  true,
 	}
 
 	ErrMalformedAuthVar = errors.New("invalid POPD_AUTH variable (must be formatted like `user:pass,user2,pass2,[...]`)")
@@ -36,9 +37,10 @@ type Config struct {
 	Users       Users
 	DockerdHost string
 	LogLevel    log.Level
-	
+	AutoRemove  bool
+
 	TLSCertPath string
-	TLSKeyPath	string
+	TLSKeyPath  string
 }
 
 // LoadConfig either reads a config file through viper, or
@@ -84,16 +86,19 @@ func LoadConfig() (cfg Config, err error) {
 	}
 
 	cfg = DefaultConfig
+
+	cfg.AutoRemove = !viper.GetBool("keep-stopped")
 	cfg.Users = users
 
 	return cfg, nil
 }
 
+// Store stores a config into a Writer.
 func (cfg Config) Store(w io.Writer) error {
 	return toml.NewEncoder(w).Encode(cfg)
 }
 
-// Store stores a config into a file. It won't replace an existing file if
+// StoreFile stores a config into a file. It won't replace an existing file if
 // overwrite is false.
 func (cfg Config) StoreFile(fileName string, overwrite bool) error {
 	if !overwrite {

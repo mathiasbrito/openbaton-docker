@@ -96,6 +96,14 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 
 	md := make(map[string]string)
 
+	for _, confParam := range vnfr.Provides.ConfigurationParameters {
+		md[confParam.ConfKey] = confParam.Value
+	}
+
+	for _, confParam := range vnfr.Configurations.ConfigurationParameters {
+		md[confParam.ConfKey] = confParam.Value
+	}
+
 	for ptype, depParam := range dependency.Parameters {
 		if ptype == vnfr.Type {
 			continue // skip yourself
@@ -112,7 +120,7 @@ func (h *handl) Modify(vnfr *catalogue.VirtualNetworkFunctionRecord,
 		if ptype == vnfr.Type {
 			continue // skip yourself
 		}
-		
+
 		for _, depParam := range vnfcDepParam.Parameters {
 			for pkey, pval := range depParam.Parameters {
 				key := strings.ToUpper(fmt.Sprintf("%s_%s", ptype, pkey))

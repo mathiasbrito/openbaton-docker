@@ -86,6 +86,8 @@ type service struct {
 
 	contsMux sync.RWMutex
 	quitChan chan struct{}
+
+	autoRemove bool
 }
 
 func newService(cfg Config, l *log.Logger) (*service, error) {
@@ -115,6 +117,8 @@ func newService(cfg Config, l *log.Logger) (*service, error) {
 		contNames: make(map[string]string),
 		netNames:  make(map[string]string),
 		quitChan:  make(chan struct{}),
+
+		autoRemove: cfg.AutoRemove,
 	}
 
 	if err := svc.checkDocker(); err != nil {

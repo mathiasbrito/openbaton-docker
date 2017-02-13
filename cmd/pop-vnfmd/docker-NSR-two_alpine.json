@@ -44,6 +44,20 @@
           "vimInstanceName":["docker-pop-vim-instance"]
         }
       ],
+      "configurations": {
+          "configurationParameters": [
+              {
+                  "confKey": "VAR_1",
+                  "value": "testval",
+                  "description": "Test value 1"
+              },
+              {
+                  "confKey": "VAR_2",
+                  "value": "22",
+                  "description": "Test value 2"
+              }
+          ]
+      },
       "virtual_link":[
         {
           "name":"private"
