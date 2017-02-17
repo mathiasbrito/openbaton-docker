@@ -51,9 +51,10 @@ func (md metadata) Strings() []string {
 // and a Docker container.
 type svcCont struct {
 	*pop.Container
+
 	DockerID string
 
-	// the container should pass through his events only once.
+	// the container should pass through its events only once.
 	mux sync.Mutex
 }
 

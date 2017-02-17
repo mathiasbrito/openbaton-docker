@@ -114,6 +114,7 @@ func (svc *service) updateStatuses(states map[string]pop.Container_Status) {
 
 			case pop.Container_FAILED:
 				cont.ExtendedStatus = "the Docker container terminated unexpectedly"
+				cont.DockerID = ""
 				stopped = true
 			}
 
@@ -145,6 +146,9 @@ func matchState(dockerState string) pop.Container_Status {
 
 	case "dead":
 		return pop.Container_FAILED
+
+	case "stopping":
+		return pop.Container_STOPPING
 
 	default:
 		return pop.Container_UNAVAILABLE

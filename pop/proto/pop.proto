@@ -72,10 +72,11 @@ message Container {
 
   enum Status {
     UNAVAILABLE = 0;
-    CREATED = 1;
-    RUNNING = 2;
-    EXITED  = 3;
-    FAILED    = 4;
+    CREATED  = 1;
+    RUNNING  = 2;
+    EXITED   = 3;
+    FAILED   = 4;
+    STOPPING = 5;
   }
 
   Status status = 8;

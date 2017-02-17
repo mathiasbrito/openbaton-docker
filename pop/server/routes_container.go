@@ -159,7 +159,7 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 			"cont": pcont.Names,
 		}).Debug("trying to stop container")
 
-		if err := svc.stopContainer(ctx, pcont); err != nil && err != ErrAlreadyStopped {
+		if err := svc.stopContainer(ctx, pcont); err != nil {
 			svc.WithFields(log.Fields{
 				"tag":  tag,
 				"op":   op,
@@ -582,26 +582,51 @@ func (svc *service) createPcont(ctx context.Context, cfg *pop.ContainerConfig) (
 	}, nil
 }
 
-// stopContainer stops a container; this function expects to hold the lock on the given pcont.
+// stopContainer stops a container; this function expects to hold the lock on the container,
+// and will remove the Docker container in the background.
 func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
+	tag := util.FuncName()
+
 	timeout := 5 * time.Second
 
 	if deadline, ok := ctx.Deadline(); ok {
 		timeout = deadline.Sub(time.Now())
 	}
 
-	if err := svc.cln.ContainerStop(ctx, pcont.DockerID, &timeout); err != nil {
-		pcont.Status = pop.Container_FAILED
-		pcont.ExtendedStatus = fmt.Sprintf("error while stopping: %v", err)
-		return err
-	}
+	// stop in the background
+	go func() {
+		pcont.Status = pop.Container_STOPPING
+		dockerID := pcont.DockerID 
 
-	pcont.Status = pop.Container_EXITED
-	pcont.ExtendedStatus = "the container has exited"
-	pcont.DockerID = ""
+		// detach the Pop container from the Docker container
+		pcont.DockerID = "" 
+
+		// needs a new context, because the request will probably return before this is executed
+		if err := svc.cln.ContainerStop(context.Background(), dockerID, &timeout); err != nil {
+			pcont.Status = pop.Container_FAILED
+			pcont.ExtendedStatus = fmt.Sprintf("error while stopping: %v", err)
+			
+			svc.WithError(err).WithFields(log.Fields{
+				"tag": tag,
+				"pcont-names": pcont.Names,
+				"docker-cont-id": dockerID,
+			}).Error("stopping Docker container failed")
+		} else {
+			pcont.Status = pop.Container_EXITED
+			pcont.ExtendedStatus = "the container has exited"
+
+			svc.WithFields(log.Fields{
+				"tag": tag,
+				"pcont-names": pcont.Names,
+				"docker-cont-id": dockerID,
+			}).Debug("Docker container successfully stopped")
+		} 
+
+		svc.releaseContIPs(pcont)
+	}()
 
 	// in the end, release the container IPs
-	return svc.releaseContIPs(pcont)
+	return nil
 }
 
 func (svc *service) updateContainer(ctx context.Context, pcont *svcCont, dockerID string) error {

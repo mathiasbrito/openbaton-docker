@@ -44,6 +44,7 @@ func init() {
 			user.Name: user,
 		},
 		LogLevel: log.ErrorLevel,
+		AutoRemove: true,
 	}
 
 	srv := &server.Server{Config: cfg, Logger: log.StandardLogger()}
