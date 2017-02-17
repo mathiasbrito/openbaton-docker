@@ -70,7 +70,7 @@ State changes are one-direction only; FAILED and STOPPED containers can only be 
 
 ## docker-popd, the Docker Pop server daemon
 
-`docker-popd` implements a Pop server and uses Docker containers as its backend.
+`docker-popd` implements a Pop server using the `docker-pop-server` library, which uses Docker containers as a Pop backend.
 More specifically, docker-popd completely abstracts Docker to its clients; the only thing the client knows about are
 Pop components.
 
@@ -83,7 +83,7 @@ Authentication is mandatory to access every popd route. `Login` generates a rand
 At the moment, every user has full access; there are no limitations. `Logout` invalidates the token used to authenticate its caller.
 
 ### popd mappings 
-The pop/server package takes care of handling every request it receives (list, container lifecycle, ...) and maps Docker concepts to Pop concepts.
+The docker-pop-server package takes care of handling every request it receives (list, container lifecycle, ...) and maps Docker concepts to Pop concepts.
 
 #### Flavours
 popd only specifies a `docker.container` flavour.

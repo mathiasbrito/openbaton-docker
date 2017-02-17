@@ -1,4 +1,4 @@
-package pop_test
+package server_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
+	"github.com/mcilloni/openbaton-docker/docker-pop-server"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,6 +21,7 @@ const (
 )
 
 var (
+	cfg server.Config
 	cln = client.Client{
 		Credentials: creds.Credentials{
 			Host:     laddr,
@@ -30,10 +32,22 @@ var (
 )
 
 func init() {
-	srv, err := dummyServer()
+	user, err := server.NewUser(uname, pass)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
+
+	cfg = server.Config{
+		PopName: "test-pop",
+		Netaddr: laddr,
+		Users: server.Users{
+			user.Name: user,
+		},
+		LogLevel: log.ErrorLevel,
+		AutoRemove: true,
+	}
+
+	srv := &server.Server{Config: cfg, Logger: log.StandardLogger()}
 
 	go func() {
 		if err := srv.Serve(); err != nil {

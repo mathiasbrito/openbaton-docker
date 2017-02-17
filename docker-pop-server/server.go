@@ -113,9 +113,5 @@ func (s *Server) Serve() error {
 		"pop-name": s.Config.PopName,
 	}).Info("launching gRPC server")
 
-	if err := srv.Serve(s.Listener); err != nil {
-		return err
-	}
-
-	return nil
+	return srv.Serve(s.Listener)
 }

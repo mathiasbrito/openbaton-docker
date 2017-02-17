@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/mcilloni/openbaton-docker/pop/server"
+	"github.com/mcilloni/openbaton-docker/docker-pop-server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

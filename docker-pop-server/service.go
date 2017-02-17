@@ -15,8 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//go:generate protoc -I ../proto ../proto/pop.proto --go_out=plugins=grpc:../proto
-
 const (
 	// TokenBytes specifies how long a token is.
 	TokenBytes = 32

@@ -11,7 +11,7 @@ This repository hosts several packages and services to enable the [OpenBaton][op
 - [pop](https://github.com/mcilloni/openbaton-docker/tree/master/pop): [gRPC] based protocol to handle and administrate a remote Docker instance as a Point-of-Presence.
 - [pop/client](https://github.com/mcilloni/openbaton-docker/tree/master/pop/client): provides a full client for Pop, that handles the mapping between Pop and OpenBaton.
 - [pop/proto](https://github.com/mcilloni/openbaton-docker/tree/master/pop/proto): Protobuf [gRPC] service definition for Pop. Automatically generated. 
-- [pop/server](https://github.com/mcilloni/openbaton-docker/tree/master/pop/server): provides a full server for Pop, that directly invokes a Docker daemon instance.
+- [docker-pop-server](https://github.com/mcilloni/openbaton-docker/tree/master/pop/server): implements a Pop server that uses a Docker instance as its backend.
 
 ## Services
 - [cmd/docker-pop](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-pop): CLI client for docker-popd.

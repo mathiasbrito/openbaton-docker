@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/mcilloni/openbaton-docker/pop/server"
+	"github.com/mcilloni/openbaton-docker/docker-pop-server"
 	"github.com/spf13/cobra"
 )
 
