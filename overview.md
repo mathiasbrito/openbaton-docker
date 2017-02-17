@@ -62,7 +62,7 @@ and attached to it.
 2. A Pop `Container`'s `Metadata` can be modified between its creation and its startup; each key-value pair represents a new environment variable to be exposed to the 
 underlying image in the container.
 3. A Pop `Container` is started (**RUNNING** state) with `Start`, and becomes reachable at its preallocated IPs on the specified endpoints. 
-4. A Pop `Container` can be put in the **STOPPED** state with `Stop`, releasing its computational resources and its state. Any IP remains associated to a stopped instance.
+4. A Pop `Container` can be put in the **EXITED** state with `Stop`, releasing its computational resources and its state. Any IP remains associated to a stopped instance.
 5. A Pop `Container` can be deleted, and every trace of it is removed from the system.
 6. A Pop `Container` can crash or fail to start; in that case, it goes into the **FAILED** state.
 
