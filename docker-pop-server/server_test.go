@@ -7,10 +7,10 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/mcilloni/openbaton-docker/docker-pop-server"
 	"github.com/mcilloni/openbaton-docker/pop/client"
 	"github.com/mcilloni/openbaton-docker/pop/client/creds"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
-	"github.com/mcilloni/openbaton-docker/docker-pop-server"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,7 +43,7 @@ func init() {
 		Users: server.Users{
 			user.Name: user,
 		},
-		LogLevel: log.ErrorLevel,
+		LogLevel:   log.ErrorLevel,
 		AutoRemove: true,
 	}
 

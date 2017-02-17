@@ -596,19 +596,19 @@ func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
 	// stop in the background
 	go func() {
 		pcont.Status = pop.Container_STOPPING
-		dockerID := pcont.DockerID 
+		dockerID := pcont.DockerID
 
 		// detach the Pop container from the Docker container
-		pcont.DockerID = "" 
+		pcont.DockerID = ""
 
 		// needs a new context, because the request will probably return before this is executed
 		if err := svc.cln.ContainerStop(context.Background(), dockerID, &timeout); err != nil {
 			pcont.Status = pop.Container_FAILED
 			pcont.ExtendedStatus = fmt.Sprintf("error while stopping: %v", err)
-			
+
 			svc.WithError(err).WithFields(log.Fields{
-				"tag": tag,
-				"pcont-names": pcont.Names,
+				"tag":            tag,
+				"pcont-names":    pcont.Names,
 				"docker-cont-id": dockerID,
 			}).Error("stopping Docker container failed")
 		} else {
@@ -616,11 +616,11 @@ func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
 			pcont.ExtendedStatus = "the container has exited"
 
 			svc.WithFields(log.Fields{
-				"tag": tag,
-				"pcont-names": pcont.Names,
+				"tag":            tag,
+				"pcont-names":    pcont.Names,
 				"docker-cont-id": dockerID,
 			}).Debug("Docker container successfully stopped")
-		} 
+		}
 
 		svc.releaseContIPs(pcont)
 	}()

@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc"
 	grpc_md "google.golang.org/grpc/metadata"
 
+	"fmt"
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
 	"github.com/openbaton/go-openbaton/util"
-	"fmt"
 	"google.golang.org/grpc/codes"
 )
 
@@ -24,12 +24,12 @@ var (
 
 	nets = []*pop.Network{
 		{
-			Id: util.GenerateID(),
-			Name: "private",
+			Id:       util.GenerateID(),
+			Name:     "private",
 			External: false,
 			Subnets: []*pop.Subnet{
 				{
-					Cidr: "172.18.0.0/16",
+					Cidr:    "172.18.0.0/16",
 					Gateway: "172.18.0.1",
 				},
 			},
@@ -45,30 +45,30 @@ var (
 
 	imgs = []*pop.Image{
 		{
-			Id: util.GenerateID(),
-			Names: []string{"nginx:latest"},
+			Id:      util.GenerateID(),
+			Names:   []string{"nginx:latest"},
 			Created: time.Now().Unix(),
 		},
 	}
 
 	conts = []*pop.Container{
 		{
-			Id: util.GenerateID(),
-			Names: []string{"cont1"},
-			ImageId: imgs[0].Id,
-			FlavourId: flavs[0].Id,
-			Created: time.Now().Unix() - 30,
-			Started: time.Now().Unix() - 29, 
-			Status: pop.Container_RUNNING,
+			Id:             util.GenerateID(),
+			Names:          []string{"cont1"},
+			ImageId:        imgs[0].Id,
+			FlavourId:      flavs[0].Id,
+			Created:        time.Now().Unix() - 30,
+			Started:        time.Now().Unix() - 29,
+			Status:         pop.Container_RUNNING,
 			ExtendedStatus: "dummy is obviously ok",
 			Endpoints: map[string]*pop.Endpoint{
 				"private": &pop.Endpoint{
-					NetId: nets[0].Id,
+					NetId:   nets[0].Id,
 					NetName: nets[0].Name,
-					Mac: "0e:f6:ae:ab:a5:5a",
+					Mac:     "0e:f6:ae:ab:a5:5a",
 					Ipv4: &pop.Ip{
 						Address: "172.18.0.22",
-						Subnet: nets[0].Subnets[0],
+						Subnet:  nets[0].Subnets[0],
 					},
 				},
 			},
@@ -79,14 +79,14 @@ var (
 
 // Dummy service
 type server struct {
-	name  string
+	name     string
 	quitChan chan struct{}
 }
 
 func dummyServer() (*server, error) {
 	return &server{
-		name: "dummy",
-		quitChan:  make(chan struct{}),
+		name:     "dummy",
+		quitChan: make(chan struct{}),
 	}, nil
 }
 
@@ -226,12 +226,12 @@ func (srv *server) Create(ctx context.Context, cfg *pop.ContainerConfig) (*pop.C
 	}
 
 	cont := &pop.Container{
-		Id: util.GenerateID(),
-		Created: time.Now().Unix(),
-		Status: pop.Container_CREATED,
-		Names: []string{cfg.Name},
+		Id:        util.GenerateID(),
+		Created:   time.Now().Unix(),
+		Status:    pop.Container_CREATED,
+		Names:     []string{cfg.Name},
 		Endpoints: cfg.Endpoints,
-		Md: &pop.Metadata{Entries: make(map[string]string)},
+		Md:        &pop.Metadata{Entries: make(map[string]string)},
 	}
 
 	conts = append(conts, cont)
