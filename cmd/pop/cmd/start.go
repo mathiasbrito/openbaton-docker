@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -14,9 +14,9 @@ var startCmd = &cobra.Command{
 	
 Per example, to start a server you have previously created, you may use the following invocation:
 
-docker-pop start nginx-cont
+pop start nginx-cont
 or
-docker-pop start id:uuid`,
+pop start id:uuid`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			failf("wrong number of arguments for start: %d", len(args))

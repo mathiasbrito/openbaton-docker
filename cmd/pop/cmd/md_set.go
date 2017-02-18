@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -14,9 +14,9 @@ var setCmd = &cobra.Command{
 	Long: `Sets the metadata for a server having the given ID, given in the format id {key=value}.
 	
 For instance, this command can be invoked as:
-docker-pop md set nginx-cont key=val key1=val1
+pop md set nginx-cont key=val key1=val1
 or
-docker-pop md set id:uuid key=val key1=val1`,
+pop md set id:uuid key=val key1=val1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			failf("wrong number of arguments for md set: %d", len(args))

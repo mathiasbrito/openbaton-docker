@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -12,9 +12,9 @@ var getCmd = &cobra.Command{
 	Short: "Gets metadata values for a given ID",
 	Long: `Gets the metadata for a server having the given ID or name.
 	
-	docker-pop md get nginx-cont
+	pop md get nginx-cont
 	or 
-	docker-pop md get id:uuid`,
+	pop md get id:uuid`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			failf("wrong number of arguments for md get: %d", len(args))

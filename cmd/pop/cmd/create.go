@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -15,7 +15,7 @@ var createCmd = &cobra.Command{
 	
 Per example, create a new nginx container using the following parameters:
 
-docker-pop create image=nginx name=nginx-cont
+pop create image=nginx name=nginx-cont
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		pargs := parseArgs(args)

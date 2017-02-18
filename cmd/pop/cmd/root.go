@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -21,9 +21,9 @@ const (
 // RootCmd represents the base command when called without any subcommands
 var (
 	RootCmd = &cobra.Command{
-		Use:   "docker-pop",
+		Use:   "pop",
 		Short: "A brief description of your application",
-		Long: fmt.Sprintf(`Use docker-pop to control a docker-popd instance.
+		Long: fmt.Sprintf(`Use pop to control a Pop server instance.
 		
 By default the server "%s" is used.
 The client must authenticate with the server either via parameters specified through a POP_AUTH variable in the form
@@ -41,7 +41,7 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.PersistentFlags().String("auth", "", "username:password to log into popd with")
+	RootCmd.PersistentFlags().String("auth", "", "username:password to use when authenticating with the Pop server")
 	RootCmd.PersistentFlags().String("host", "", "specifies the server to connect to")
 	RootCmd.PersistentFlags().Bool("json", false, "output JSON instead of YAML")
 

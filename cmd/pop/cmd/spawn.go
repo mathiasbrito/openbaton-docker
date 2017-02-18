@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -15,7 +15,7 @@ Using spawn is equivalent to a create command followed by a start command.
 	
 Per example, spawn a new nginx container using the following parameters:
 
-docker-pop spawn image=nginx name=nginx-cont
+pop spawn image=nginx name=nginx-cont
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		pargs := parseArgs(args)

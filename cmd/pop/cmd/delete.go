@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -15,11 +15,11 @@ var deleteCmd = &cobra.Command{
 	
 Per example, to delete a container named "nginx-cont" you have previously stopped or created, you may use the following invocation:
 
-docker-pop delete nginx-cont
+pop delete nginx-cont
 
 or
 
-docker-pop delete id:uuid
+pop delete id:uuid
 
 The '*' symbol can be used to delete every server known to the daemon.`,
 	Run: func(cmd *cobra.Command, args []string) {

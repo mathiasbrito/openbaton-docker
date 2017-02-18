@@ -1,4 +1,4 @@
-package cmd
+﻿package cmd
 
 import (
 	"context"
@@ -15,9 +15,9 @@ var stopCmd = &cobra.Command{
 	
 Per example, to stop a server you have previously started, you may use the following invocation:
 
-docker-pop stop nginx-cont
+pop stop nginx-cont
 or
-docker-pop stop id:uuid
+pop stop id:uuid
 
 The '*' symbol can be used to stop every server known to the daemon.`,
 	Run: func(cmd *cobra.Command, args []string) {
