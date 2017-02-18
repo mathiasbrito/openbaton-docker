@@ -68,7 +68,7 @@ underlying image in the container.
 
 State changes are one-direction only; FAILED and STOPPED containers can only be deleted.
 
-## docker-popd, the Docker Pop server daemon
+## `docker-popd`, the Docker Pop server daemon
 
 `docker-popd` implements a Pop server using the `docker-pop-server` library, which uses Docker containers as a Pop backend.
 More specifically, docker-popd completely abstracts Docker to its clients; the only thing the client knows about are
@@ -110,7 +110,7 @@ synchronise the state of the Pop container in case its Docker container has cras
 * A `Stop` request stops the Pop container; the underlying Docker container is stopped and deleted.
 * A `Delete` request deletes the Pop container from the daemon. If it is in the RUNNING state, it is stopped first, and then deleted.
 
-## pop/client 
+## `pop/client`
 
 The pop/client package wraps the protoc-generated gRPC Pop client, converting Pop types into go-openbaton catalogue types.
 client.Client allows to query and operate on a Pop, getting Openbaton types as a result.
@@ -118,9 +118,9 @@ client.Client allows to query and operate on a Pop, getting Openbaton types as a
 client.Client instances can be created with no cost; connections are created on demand and kept by the library in a pool, reusing the same gRPC connection for the same credentials.
 This allows the plugin to use the library in a stateless fashion, without having to reconnect for each operation.
 
-### docker-pop 
+### `pop` CLI tool
 
-`docker-pop` is a CLI tool to query and interface with docker-popd.
+`pop` is a CLI tool to query and interface with a Pop server.
 
 ## Why does Pop use gRPC instead of AMQP?
 * gRPC is much simpler than AMQP to do RPC. It provides a full framework with auto reconnection and a strong-typed serialisation format whose parser is 
