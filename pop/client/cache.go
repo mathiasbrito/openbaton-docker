@@ -16,23 +16,32 @@ func init() {
 	cache.init()
 }
 
+// sessionEntry is uniquely associated with a set of Credentials, and
+// holds a section for it. Adding a mutex here avoids races while reconnecting.
+type sessionEntry struct {
+	sess *session
+	mux sync.Mutex
+}
+
 type sessionCache struct {
-	// get() is a critical section
+	// getEntry() is a critical section
 	lock sync.Mutex
 
 	// Use creds.Credentials (a host,user,password tuple) as a key for a session.
 	// A session authenticated for the given credentials on the given host should be valid.
-	sessions map[creds.Credentials]*session
+	sessions map[creds.Credentials]*sessionEntry
 }
 
 // get() retrieves or creates a session for the given credentials.
 // It requires a mutex to avoid multiple parallel get() requests.
 func (sc *sessionCache) get(c creds.Credentials) (*session, error) {
-	sc.lock.Lock()
-	defer sc.lock.Unlock()
+	entry := sc.getEntry(c)
 
-	sess, ok := sc.sessions[c]
-	if ok && !sess.invalid {
+	entry.mux.Lock()
+	defer entry.mux.Unlock()
+
+	sess := entry.sess
+	if sess != nil && !sess.invalid {
 		return sess, nil
 	}
 
@@ -42,13 +51,26 @@ func (sc *sessionCache) get(c creds.Credentials) (*session, error) {
 	}
 
 	// an invalid session object will be overwritten here.
-	sc.sessions[c] = sess
+	entry.sess = sess
 
 	return sess, nil
 }
 
+func (sc *sessionCache) getEntry(c creds.Credentials) *sessionEntry {
+	sc.lock.Lock()
+	defer sc.lock.Unlock()
+
+	entry, found := sc.sessions[c]
+	if !found {
+		entry = &sessionEntry{}
+		sc.sessions[c] = entry
+	}
+
+	return entry
+}
+
 func (sc *sessionCache) init() {
-	sc.sessions = make(map[creds.Credentials]*session)
+	sc.sessions = make(map[creds.Credentials]*sessionEntry)
 }
 
 // FlushError is an error type containing any error encountered while executing
@@ -72,13 +94,19 @@ func (errs FlushError) Error() string {
 func FlushSessions() error {
 	ret := FlushError{}
 
-	for _, sess := range cache.sessions {
-		if err := sess.logout(); err != nil {
-			ret = append(ret, err)
-		}
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 
-		if err := sess.conn.Close(); err != nil {
-			ret = append(ret, err)
+	for _, sessEntry := range cache.sessions {
+
+		if sess := sessEntry.sess; sess != nil {
+			if err := sess.logout(); err != nil {
+				ret = append(ret, err)
+			}
+
+			if err := sess.conn.Close(); err != nil {
+				ret = append(ret, err)
+			}
 		}
 	}
 
