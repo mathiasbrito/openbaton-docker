@@ -256,6 +256,10 @@ func newSvcNet(name string, dnr types.NetworkResource) (*svcNet, error) {
 	// add the gateway if present
 	gateway4 := net.ParseIP(dnr.IPAM.Config[0].Gateway)
 
+	// shrink the IP to 4 bytes
+	gateway4 = gateway4.To4()
+
+
 	return &svcNet{
 		ID:   dnr.ID,
 		Name: name,
@@ -346,7 +350,7 @@ func (pnet *svcNet) ToPop() *pop.Network {
 		Subnets: []*pop.Subnet{
 			{
 				Cidr:    pnet.net4.String(),
-				Gateway: pnet.net4.String(),
+				Gateway: pnet.gateway4.String(),
 			},
 		},
 	}
