@@ -187,7 +187,7 @@ func (svc *service) Delete(ctx context.Context, filter *pop.Filter) (*empty.Empt
 		"tag":  tag,
 		"op":   op,
 		"cont": pcont.Names,
-	}).Debug("trying to stop container")
+	}).Debug("container successfully deleted")
 
 	return &empty.Empty{}, nil
 }
