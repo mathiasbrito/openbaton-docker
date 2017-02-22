@@ -259,7 +259,6 @@ func newSvcNet(name string, dnr types.NetworkResource) (*svcNet, error) {
 	// shrink the IP to 4 bytes
 	gateway4 = gateway4.To4()
 
-
 	return &svcNet{
 		ID:   dnr.ID,
 		Name: name,

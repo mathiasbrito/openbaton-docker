@@ -20,7 +20,7 @@ func init() {
 // holds a section for it. Adding a mutex here avoids races while reconnecting.
 type sessionEntry struct {
 	sess *session
-	mux sync.Mutex
+	mux  sync.Mutex
 }
 
 type sessionCache struct {

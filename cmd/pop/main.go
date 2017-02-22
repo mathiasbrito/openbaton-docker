@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import "github.com/mcilloni/openbaton-docker/cmd/pop/cmd"
 
