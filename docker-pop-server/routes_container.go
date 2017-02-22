@@ -593,9 +593,10 @@ func (svc *service) stopContainer(ctx context.Context, pcont *svcCont) error {
 		timeout = deadline.Sub(time.Now())
 	}
 
+	pcont.Status = pop.Container_STOPPING
+
 	// stop in the background
 	go func() {
-		pcont.Status = pop.Container_STOPPING
 		dockerID := pcont.DockerID
 
 		// detach the Pop container from the Docker container
