@@ -1,31 +1,30 @@
-# Pop VNFM (AMQP)
-`pop-vnfmd` is a generic Virtual Network Function Manager implementation for [OpenBaton][openbaton], written using Go and [go-openbaton] and designed to be used to manage containers (like Docker) using [pop-plugind] and a Pop server like [docker-popd].
+# mgmt-based Generic VNFM (AMQP)
+`mgmt-gvnfmd` is a generic Virtual Network Function Manager implementation for [OpenBaton][openbaton], written using Go and [go-openbaton] and designed to use the [mgmt] protocol to manage Virtual Network Functions, instead of an Element Management System.
 
 ## Technical Requirements
 
-You need a fully working NFVO to use the Pop VNFM, plus [pop-plugind] running and available to the NFVO.
-You'll also need a functioning and reachable instance of a Pop server, like [docker-popd].
+You need a fully working NFVO to use the Pop VNFM, plus a mgmt-enabled consumer, like the one provided by [pop-plugind].
 
-## How to install `pop-vnfmd`
+## How to install `mgmt-gvnfmd`
 
 On both *NIX and Windows:
 ```shell
-go get -u github.com/mcilloni/openbaton-docker/cmd/pop-vnfmd
+go get -u github.com/mcilloni/openbaton-docker/cmd/mgmt-gvnfmd
 ```
 
-The `go` tool will automatically fetch and build both the sources and their dependencies, and a `pop-vnfmd` binary will be generated in `$GOPATH/bin` (`%GOPATH%\bin` on Windows CMD).
+The `go` tool will automatically fetch and build both the sources and their dependencies, and a `mgmt-gvnfmd` binary will be generated in `$GOPATH/bin` (`%GOPATH%\bin` on Windows CMD).
 
-## How to use `pop-vnfmd`
+## How to use `mgmt-gvnfmd`
 
  ```bash
- pop-vnfmd --cfg /path/to/config.toml
+ mgmt-gvnfmd --cfg /path/to/config.toml
  ```
 
 The VNFM must be configured using a configuration file, specified through the `--cfg` flag (see [the sample configuration for further details][sample-conf]).
 
 In case no such flag is specified, the default behaviour is to search in the current directory for a file named `config.toml`.
 
-## How to configure `pop-vnfmd`
+## How to configure `mgmt-gvnfmd`
 
 The sample configuration should work straight out of the box with a standard local setup of OpenBaton.
 
@@ -59,7 +58,7 @@ Apache License, Version 2.0. See LICENSE for further details.
 [openbaton]: http://openbaton.org
 [openbaton-doc]: http://openbaton.org/documentation
 [openbaton-github]: http://github.org/openbaton
-[sample-conf]: https://raw.githubusercontent.com/mcilloni/openbaton-docker/master/cmd/pop-vnfmd/config.toml
+[sample-conf]: https://raw.githubusercontent.com/mcilloni/openbaton-docker/master/cmd/mgmt-gvnfmd/config.toml
 [go-openbaton]: http://github.com/openbaton/go-openbaton
-[docker-popd]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-popd
+[mgmt]: https://github.com/mcilloni/openbaton-docker/tree/master/mgmt
 [pop-plugind]: https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-plugind

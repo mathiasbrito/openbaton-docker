@@ -16,9 +16,8 @@ This repository hosts several packages and services to enable the [OpenBaton][op
 ## Services
 - [cmd/pop](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop): CLI client to query Pop daemons.
 - [cmd/docker-popd](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/docker-popd): Pop server for Docker.
-- [cmd/pop-plugind](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-plugind): OpenBaton Plugin for Pop (Docker).
-- [cmd/pop-vnfmd](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-vnfmd): VNF Manager for Pop (Docker).
-
+- [cmd/pop-plugind](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/pop-plugind): OpenBaton Plugin for Pop.
+- [cmd/mgmt-gvnfmd](https://github.com/mcilloni/openbaton-docker/tree/master/cmd/mgmt-gvnfmd): Generic VNF Manager, using the mgmt protocol instead of an EMS.
 
 ## Issue tracker
 
