@@ -157,6 +157,5 @@ mgmt piggybacks on the underlying VNFM or Plugin AMQP connection to get an AMQP 
 
 # Possible developments
 * Support network creation (should be trivial)
-* Support scaling in VNFM
 * Abstract images (ie, list to the clients all of the VNF Docker images available on the Hub, and then pull them on demand?)
 * ...
