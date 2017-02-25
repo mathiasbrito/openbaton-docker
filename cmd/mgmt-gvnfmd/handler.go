@@ -321,9 +321,12 @@ func (h *handl) scaleOut(vnfr *catalogue.VirtualNetworkFunctionRecord,
 	vnfcInstance *catalogue.VNFCInstance, dependency *catalogue.VNFRecordDependency) error {
 
 	h.WithFields(log.Fields{
-		"tag":           "mgmt-gvnfm-handl-scaleOut",
-		"vnfc_instance": vnfcInstance.ID,
+		"tag": "mgmt-gvnfm-handl-scaleOut",
 	}).Debug("scaling out")
+
+	if vnfcInstance == nil {
+		return errors.New("this VNFM requires NFVO-side allocation of VNFC instances")
+	}
 
 	// scale out equals to instantiate + configure + start
 
