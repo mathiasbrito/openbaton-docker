@@ -1,21 +1,26 @@
 package server
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 )
 
 // newLogger inits a logger
-func newLogger(level log.Level) *log.Logger {
-	color := level >= log.DebugLevel // enable forced color for debug
+func newLogger(cfg Config) *log.Logger {
+	color := cfg.LogLevel >= log.DebugLevel // enable forced color for debug
 
 	l := log.New()
 
 	l.Formatter = &log.TextFormatter{
-		DisableColors: !color,
-		ForceColors:   color,
+		DisableColors:    !color,
+		DisableTimestamp: !cfg.LogTimestamps,
+		ForceColors:      color,
+		FullTimestamp:    cfg.LogTimestamps,
+		TimestampFormat:  time.RFC3339Nano,
 	}
 
-	l.Level = level
+	l.Level = cfg.LogLevel
 
 	return l
 }

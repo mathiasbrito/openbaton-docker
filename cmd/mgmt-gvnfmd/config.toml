@@ -6,6 +6,7 @@ timeout = 2000
 
     [vnfm.logger]
     level = "DEBUG"
+    timestamps = true
     use-colors = true
 
 [amqp]

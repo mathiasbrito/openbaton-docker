@@ -22,6 +22,7 @@ var defaultParams = &plugin.Params{
 	Name:          "openbaton",
 	Port:          5672,
 	Workers:       10,
+	Timestamps:    true,
 	Type:          "docker-pop",
 	Username:      "admin",
 	Password:      "openbaton",

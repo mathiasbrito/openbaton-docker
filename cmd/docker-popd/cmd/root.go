@@ -33,10 +33,6 @@ var RootCmd = &cobra.Command{
 			log.WithError(err).Fatal("failure while launching popd")
 		}
 
-		if !verbose {
-			srv.Level = log.WarnLevel
-		}
-
 		if err := srv.Serve(); err != nil {
 			log.WithError(err).Fatal("failure while running popd")
 		}
@@ -80,6 +76,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "output everything on the logs")
 
 	viper.BindPFlag("keep-stopped", RootCmd.PersistentFlags().Lookup("keep-stopped"))
+	viper.BindPFlag("verbose", RootCmd.PersistentFlags().Lookup("verbose"))
 }
 
 func loadConfig() error {

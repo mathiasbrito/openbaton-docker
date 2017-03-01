@@ -17,13 +17,14 @@ import (
 // DefaultConfig is a sane template config for a local server.
 var (
 	DefaultConfig = Config{
-		PopName:     "docker-popd",
-		Proto:       pop.DefaultListenProtocol,
-		Netaddr:     pop.DefaultListenAddress,
-		Users:       Users{},
-		DockerdHost: client.DefaultDockerHost,
-		LogLevel:    log.DebugLevel,
-		AutoRemove:  true,
+		PopName:       "docker-popd",
+		Proto:         pop.DefaultListenProtocol,
+		Netaddr:       pop.DefaultListenAddress,
+		Users:         Users{},
+		DockerdHost:   client.DefaultDockerHost,
+		LogLevel:      log.DebugLevel,
+		LogTimestamps: false,
+		AutoRemove:    true,
 	}
 
 	ErrMalformedAuthVar = errors.New("invalid POPD_AUTH variable (must be formatted like `user:pass,user2,pass2,[...]`)")
@@ -31,13 +32,14 @@ var (
 
 // Config for the PoP service.
 type Config struct {
-	PopName     string
-	Proto       string
-	Netaddr     string
-	Users       Users
-	DockerdHost string
-	LogLevel    log.Level
-	AutoRemove  bool
+	PopName       string
+	Proto         string
+	Netaddr       string
+	Users         Users
+	DockerdHost   string
+	LogLevel      log.Level
+	LogTimestamps bool
+	AutoRemove    bool
 
 	TLSCertPath string
 	TLSKeyPath  string
@@ -88,6 +90,13 @@ func LoadConfig() (cfg Config, err error) {
 	cfg = DefaultConfig
 
 	cfg.AutoRemove = !viper.GetBool("keep-stopped")
+
+	if viper.GetBool("verbose") {
+		cfg.LogTimestamps = true
+	} else {
+		cfg.LogLevel = log.WarnLevel
+	}
+
 	cfg.Users = users
 
 	return cfg, nil
