@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/docker/docker/api"
 	"github.com/docker/docker/client"
 	"github.com/golang/protobuf/ptypes/empty"
 	pop "github.com/mcilloni/openbaton-docker/pop/proto"
@@ -196,5 +197,5 @@ func dialDocker(cfg Config) (*client.Client, error) {
 		host = client.DefaultDockerHost
 	}
 
-	return client.NewClient(host, client.DefaultVersion, nil, nil)
+	return client.NewClient(host, api.DefaultVersion, nil, nil)
 }
