@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -15,7 +16,7 @@ import (
 type Server struct {
 	*log.Logger
 	Config   Config
-	Listener net.Listener
+	GRPCServer *grpc.Server
 
 	svc *service
 }
@@ -44,19 +45,9 @@ func (s *Server) Close() error {
 		"pop-name": s.Config.PopName,
 	}).Info("stopping server")
 
-	err1 := s.svc.close()
-	err2 := s.Listener.Close()
-
-	switch {
-	case err1 != nil:
-		return err1
-
-	case err2 != nil:
-		return err2
-
-	default:
-		return nil
-	}
+	s.GRPCServer.Stop()
+	
+	return s.svc.close()
 }
 
 // Serve spawns the service.
@@ -83,8 +74,6 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	s.Listener = lis
-
 	s.svc, err = newService(s.Config, s.Logger)
 	if err != nil {
 		return err
@@ -104,14 +93,21 @@ func (s *Server) Serve() error {
 		opts = append(opts, grpc.Creds(creds))
 	}
 
-	srv := grpc.NewServer(opts...)
+	s.GRPCServer = grpc.NewServer(opts...)
 
-	pop.RegisterPopServer(srv, s.svc)
+
+	pop.RegisterPopServer(s.GRPCServer, s.svc)
 
 	s.WithFields(log.Fields{
 		"tag":      tag,
 		"pop-name": s.Config.PopName,
 	}).Info("launching gRPC server")
 
-	return srv.Serve(s.Listener)
+	err = s.GRPCServer.Serve(lis)
+
+	if got, want := grpc.ErrorDesc(err), "use of closed network connection"; got != "" && !strings.Contains(got, want) {
+		return err
+	}
+
+	return nil
 }

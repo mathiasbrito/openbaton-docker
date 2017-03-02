@@ -47,6 +47,8 @@ func (svc *service) refreshLoop() {
 			svc.WithFields(log.Fields{
 				"tag": tag,
 			}).Debug("refresh loop stopping")
+
+			close(svc.quitChan)
 			return
 
 		case <-time.After(monitoringDelay):
