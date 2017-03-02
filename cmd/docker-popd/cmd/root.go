@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	 
 	"os"
 	"os/signal"
-	"runtime"
-	"runtime/pprof"
 
 	"github.com/mcilloni/openbaton-docker/docker-pop-server"
 	log "github.com/sirupsen/logrus"
@@ -16,7 +16,7 @@ import (
 var (
 	cfgFile  string
 	keepCont bool
-	memprof  string
+	prof  	 string
 	verbose  bool
 )
 
@@ -34,6 +34,20 @@ var RootCmd = &cobra.Command{
 		srv, err := server.New()
 		if err != nil {
 			log.WithError(err).Fatal("failure while launching popd")
+		}
+
+		if prof != "" {
+			if !profilingSupport {
+				srv.Logger.Fatal("profiling has not been enabled at compile time")
+			}
+
+			srv.Logger.WithField("prof-connstr", prof).Debug("attempting to setting up HTTP live profiler")
+
+			go func() {
+				if err := http.ListenAndServe(prof, nil); err != nil {
+					srv.Logger.WithError(err).Error("error with http profiling server")
+				}
+			}()
 		}
 
 		sigChan := make(chan os.Signal, 1)
@@ -56,24 +70,6 @@ var RootCmd = &cobra.Command{
 		}
 
 		<-join
-
-		if memprof != "" {
-			srv.Logger.WithField("memprof-file", memprof).Debug("attempting to dump memory profile file")
-
-			f, err := os.Create(memprof)
-			if err != nil {
-				srv.Logger.WithError(err).Fatal("failure while creating profile file")
-			}
-			
-			defer f.Close()
-			
-			runtime.GC() // get up-to-date statistics
-			if err := pprof.WriteHeapProfile(f); err != nil {
-				srv.Logger.WithError(err).Fatal("could not write memory profile")
-			}
-
-			srv.Logger.WithField("memprof-file", memprof).Debug("dumped memory profile file")
-		}
 	},
 }
 
@@ -94,7 +90,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "cfg", "", "config file (default is 'docker-popd.toml')")
 	RootCmd.PersistentFlags().BoolVar(&keepCont, "keep-stopped", false, "keep Docker containers after they exit")
-	RootCmd.PersistentFlags().StringVar(&memprof, "memprofile", "", "enable memory profiling, dumping the results to a given file (debug only)")
+	RootCmd.PersistentFlags().StringVar(&prof, "profile-addr", "", "enable live profiling, spawning an http server listening on the provided string (debug only)")
 	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "output everything on the logs")
 
 	viper.BindPFlag("keep-stopped", RootCmd.PersistentFlags().Lookup("keep-stopped"))
