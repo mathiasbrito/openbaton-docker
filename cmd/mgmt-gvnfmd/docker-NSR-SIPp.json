@@ -145,7 +145,7 @@
                 }
             ],
             "type":"client",
-            "endpoint":"docker",
+            "endpoint":"mgmt",
             "vnfPackageLocation":"https://github.com/openbaton/vnf-scripts.git"
         },
         {
@@ -190,7 +190,7 @@
                 }
             ],
             "type":"server",
-            "endpoint":"docker",
+            "endpoint":"mgmt",
             "vnfPackageLocation":"https://github.com/openbaton/vnf-scripts.git"
         }
     ],

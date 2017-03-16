@@ -1,5 +1,5 @@
 {
-  "name":"docker-pop-vim-instance",
+  "name":"pop-vim-instance",
   "authUrl":"http://localhost:60000",
   "tenant":"tenantName",
   "username":"user_name",
@@ -8,7 +8,7 @@
   "securityGroups": [
     "securityName"
   ],
-  "type":"docker-pop",
+  "type":"pop",
   "location":{
     "name":"Berlin",
     "latitude":"52.525876",

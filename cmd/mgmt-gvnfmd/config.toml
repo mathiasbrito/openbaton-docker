@@ -1,7 +1,7 @@
 [vnfm]
-type = "docker"
-endpoint = "docker-endpoint"
-description = "Docker VNFM"
+type = "mgmt"
+endpoint = "mgmt-endpoint"
+description = "mgmt GVNFM"
 timeout = 2000
 
     [vnfm.logger]

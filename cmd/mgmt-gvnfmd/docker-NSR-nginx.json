@@ -8,7 +8,7 @@
       "version":"0.1",
       "name":"nginx",
       "type":"server",
-      "endpoint":"docker",
+      "endpoint":"mgmt",
       "configurations":{
         "name":"config_name",
         "configurationParameters":[]
@@ -18,7 +18,7 @@
           "vm_image":[
             "nginx:latest"
           ],
-          "vimInstanceName":["docker-pop-vim-instance"],
+          "vimInstanceName":["pop-vim-instance"],
           "scale_in_out":1,
           "vnfc":[
             {

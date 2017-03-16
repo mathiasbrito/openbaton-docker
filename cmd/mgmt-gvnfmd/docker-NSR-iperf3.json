@@ -41,7 +41,7 @@
               ]
             }
           ],
-          "vimInstanceName":["docker-pop-vim-instance"]
+          "vimInstanceName":["pop-vim-instance"]
         }
       ],
       "virtual_link":[
@@ -55,7 +55,7 @@
         }
       ],
       "type":"client",
-      "endpoint":"docker",
+      "endpoint":"mgmt",
       "vnfPackageLocation":"https://github.com/openbaton/vnf-scripts.git"
     },
     {
@@ -91,7 +91,7 @@
               ]
             }
           ],
-          "vimInstanceName":["docker-pop-vim-instance"]
+          "vimInstanceName":["pop-vim-instance"]
         }
       ],
       "deployment_flavour":[
@@ -100,7 +100,7 @@
         }
       ],
       "type":"server",
-      "endpoint":"docker",
+      "endpoint":"mgmt",
       "vnfPackageLocation":"https://github.com/openbaton/vnf-scripts.git"
     }
   ],

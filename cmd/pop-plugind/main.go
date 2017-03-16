@@ -23,7 +23,7 @@ var defaultParams = &plugin.Params{
 	Port:          5672,
 	Workers:       10,
 	Timestamps:    true,
-	Type:          "docker-pop",
+	Type:          "pop",
 	Username:      "admin",
 	Password:      "openbaton",
 }
@@ -59,7 +59,7 @@ func main() {
 			Password:      args[5],
 			LogLevel:      log.InfoLevel,
 			LogFile:       *logPath,
-			Type:          "test",
+			Type:          "pop",
 		}
 	}
 
