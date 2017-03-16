@@ -111,7 +111,7 @@ func (svc *service) getDefaultEndpoint() (*pop.Endpoint, error) {
 }
 
 func (svc *service) initPrivateNetwork(name string) (*svcNet, error) {
-	net, err := svc.cln.NetworkInspect(context.Background(), name)
+	net, err := svc.cln.NetworkInspect(context.Background(), name, svc.Logger.Level > log.InfoLevel)
 
 	// If the network doesn't exist, create a new one.
 	if client.IsErrNetworkNotFound(err) {
@@ -165,7 +165,7 @@ func (svc *service) newRandomNetwork(name string) (nr types.NetworkResource, opE
 		return
 	}
 
-	newNet, err := svc.cln.NetworkInspect(context.Background(), resp.ID)
+	newNet, err := svc.cln.NetworkInspect(context.Background(), resp.ID, svc.Logger.Level > log.InfoLevel)
 	if err != nil {
 		opErr = err
 		return
